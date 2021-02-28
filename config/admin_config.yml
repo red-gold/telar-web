@@ -1,0 +1,4 @@
+environment:
+  base_route: "/admin"
+  write_debug: "true"
+  exec_timeout: 20

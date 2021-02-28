@@ -1,0 +1,3 @@
+environment:
+  base_route: "/actions"
+  write_debug: "true"

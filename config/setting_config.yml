@@ -1,0 +1,3 @@
+environment:
+  base_route: "/setting"
+  write_debug: "true"

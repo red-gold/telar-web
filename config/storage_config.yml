@@ -1,0 +1,6 @@
+environment:
+  base_route: /storage
+  bucket_name: resume-web-app.appspot.com
+  exec_timeout: "20"
+  storage_secret_path: /var/openfaas/secrets/serviceAccountKey.json
+  write_debug: "true"

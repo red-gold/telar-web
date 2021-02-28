@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+
+    <style>
+         body {
+            background-color: #fafafa
+        }
+        .center-col {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            fill: currentColor;
+            height: 2em;
+            display: inline-block;
+            font-size: 21px;
+            transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .pageContainer {
+            position: relative;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            flex: 1 0 auto;
+            padding: 55px 0 11px 0;
+
+        }
+
+        .pageContainer:before {
+            position: absolute;
+            top: -145px;
+            left: 0;
+            width: 100%;
+            min-height: 365px;
+            height: 60vh;
+            content: " ";
+            background-repeat: no-repeat;
+            background-size: cover;
+            transition: background .4s;
+            background-position-y: initial;
+            background-position-x: center;
+        }
+
+        .pageItem {
+            z-index: 1;
+        }
+
+        .appbar {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .contain {
+            width: 100%;
+            background-color: white;
+        }
+
+        .loginContent {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 382px;
+            height: 100%;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position-y: initial;
+            background-position-x: center;
+        }
+
+        .loginSide {
+            max-width: 260px;
+            min-width: 260px;
+        }
+
+        .sideTitle {
+            color: white;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .sideBody {
+            color: white;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .sideContain {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .sideButton {
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            color: rgba(255, 255, 255, 0.87);
+        }
+
+        .colorCover {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #3366ff
+        }
+
+        .centerRoot {
+            max-width: 1240px;
+            height: 539;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .centerContainer {
+            display: flex;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
+            text-align: center;
+            border-radius: 5px;
+            max-width: 429px;
+            overflow: hidden;
+            justify-content: center;
+        }
+
+        .root {
+            padding: 20px 40px 36px;
+        }
+
+        .input-field {
+            min-width: 280px;
+            margin-top: 20px;
+
+        }
+
+        .divider {
+            border: none;
+            height: 1px;
+            margin: 0;
+            flex-shrink: 0;
+            background-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .link {
+            color: default;
+            display: inline-block;
+        }
+
+        .bottomPaper {
+            display: inherit;
+            font-size: small;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .submit-button {
+            width: 100%;
+        }
+
+        .reset-pass-link {
+            display: inherit;
+            font-size: small;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        /* down sm */
+        @media (max-width: 959.95px) {
+            .centerContainer {
+                width: 428px;
+            }
+        }
+
+        /* down xs */
+        @media (max-width: 599.95px) {
+            .root {
+                padding: 0px 40px 36px;
+            }
+
+            .pageContainer {
+                padding: 0px 0 11px 0
+            }
+
+            .contain {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                background-color: transparent;
+            }
+
+            .centerRoot {
+                margin: 0;
+                padding: 0;
+                height: 429px;
+            }
+
+            .centerContainer {
+                box-shadow: unset;
+                padding: 0;
+                width: 100% !important;
+                border-radius: 0;
+                margin: 0 auto;
+            }
+
+        }
+    </style>
+
+    <title>{{.Title}}</title>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Page Content goes here -->
+
+        <div class="appbar">
+            <img src="{{.OrgAvatar}}" alt={{.AppName}} class="logo" />
+        </div>
+        <div class="pageContainer">
+            <div class="centerRoot animate-bottom">
+                <div class="centerContainer">
+                    <div class="contain pageItem">
+
+                        <form class="col s12" id="main" action="{{.ActionForm}}" method="post" novalidate>
+
+                            <div class="root">
+                                <div class="input-field">
+                                    <input id="username" name="username" type="text">
+                                    <label for="username">Username</label>
+                                    <span class="helper-text messages"></span>
+                                </div>
+                                <div class="input-field">
+                                    <input id="password" name="password" type="password">
+                                    <label for="password">Password</label>
+                                    <span class="helper-text messages"></span>
+                                </div>
+                                <button id="submit-btn"  class="btn waves-effect waves-light btn-small submit-button orange accent-3"
+                                    type="submit" name="action">Login
+                                </button>
+                                <div id="progress-btn" style="position: relative;display:none;">
+                                        <div class="preloader-wrapper small active" style="z-index: 2;position: absolute;top: 50%;left: 50%;margin-top: -12px;margin-left: -12px;">
+                                            <div class="spinner-layer spinner-green-only">
+                                              <div class="circle-clipper left">
+                                                <div class="circle"></div>
+                                              </div><div class="gap-patch">
+                                                <div class="circle"></div>
+                                              </div><div class="circle-clipper right">
+                                                <div class="circle"></div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <button class="btn waves-effect waves-light disabled"
+                                          type="submit" name="action">Login
+                                      </button>
+                                    </div>
+                            </div>
+                        </form>
+                        <blockquote id="error_message" style="display: none;">
+                            {{.Message}}
+                        </blockquote>
+
+                    </div>
+                </div>
+            </div>
+            <div style="height: 130px"></div>
+            <footer class="page-footer orange accent-3">
+                <div class="container">
+                    <div class="row">
+                        <div class="col l6 s12">
+                            <h5 class="white-text">{{.AppName}}</h5>
+                            <p class="grey-text text-lighten-4">Open source social network by {{.OrgName}}.</p>
+                        </div>
+                        <div class="col l4 offset-l2 s12">
+                            <h5 class="white-text">Links</h5>
+                            <ul>
+                                <li><a class="grey-text text-lighten-3" href="https://github.com/red-gold">Github</a>
+                                </li>
+                                <li><a class="grey-text text-lighten-3" href="https://medium.com/red-gold">Blog</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-copyright">
+                    <div class="container">
+                        © {{.OrgName}} Copyright
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+    </div>
+
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script>
+        (function () {
+            var errMessage =  "{{.Message}}"
+            if (errMessage != "") {
+                document.getElementById('error_message').style.display = "block"
+            }
+            var constraints = {
+                password: {
+                    // Password is also required
+                    presence: true,
+                    // And must be at least 5 characters long
+                    length: {
+                        minimum: 5
+                    }
+                },
+                username: {
+                    // Email is required
+                    presence: true,
+                    // and must be an email (duh)
+                    email: true
+                },
+            };
+
+            // Hook up the form so we can prevent it from being posted
+            var form = document.querySelector("form#main");
+            form.addEventListener("submit", function (ev) {
+                ev.preventDefault();
+                var status = handleFormSubmit(form);
+                if (!status) {
+                    return
+                }
+                form.submit()
+                const submitBtn = document.getElementById("submit-btn");
+                const progressBtn = document.getElementById("progress-btn");
+                submitBtn.style.display = "none";
+                progressBtn.style.display = "block";
+            });
+
+            // Hook up the inputs to validate on the fly
+            var inputs = document.querySelectorAll("input, textarea, select")
+            for (var i = 0; i < inputs.length; ++i) {
+                inputs.item(i).addEventListener("change", function (ev) {
+                    var errors = validate(form, constraints) || {};
+                    showErrorsForInput(this, errors[this.name])
+                });
+            }
+
+            function handleFormSubmit(form, input) {
+                // validate the form against the constraints
+                var errors = validate(form, constraints);
+                // then we update the form to reflect the results
+                showErrors(form, errors || {});
+                if (!errors) {
+                    return true;
+                }
+                return false;
+            }
+
+            // Updates the inputs with the validation errors
+            function showErrors(form, errors) {
+                // We loop through all the inputs and show the errors for that input
+                _.each(form.querySelectorAll("input[name], select[name]"), function (input) {
+                    // Since the errors can be null if no errors were found we need to handle
+                    // that
+                    showErrorsForInput(input, errors && errors[input.name]);
+                });
+            }
+
+            // Shows the errors for a specific input
+            function showErrorsForInput(input, errors) {
+                // This is the root of the input
+                var formGroup = closestParent(input.parentNode, "input-field")
+                    // Find where the error messages will be insert into
+                    , messages = formGroup.querySelector(".messages"),
+                    input = formGroup.querySelector("input")
+                // First we remove any old messages and resets the classes
+                resetFormGroup(formGroup);
+                // If we have errors
+                if (errors) {
+                    // we first mark the group has having errors
+                    input.classList.add("invalid");
+                    // then we append all the errors
+                    _.each(errors, function (error) {
+                        addError(messages, error);
+                    });
+                } else {
+                    // otherwise we simply mark it as success
+                    input.classList.add("valid");
+                }
+            }
+
+            // Recusively finds the closest parent that has the specified class
+            function closestParent(child, className) {
+                if (!child || child == document) {
+                    return null;
+                }
+                if (child.classList.contains(className)) {
+                    return child;
+                } else {
+                    return closestParent(child.parentNode, className);
+                }
+            }
+
+            function resetFormGroup(formGroup) {
+                // Remove the success and error classes
+                var input = formGroup.querySelector("input")
+                input.classList.remove("invalid");
+                input.classList.remove("valid");
+                // and remove any old messages
+                _.each(formGroup.querySelectorAll(".red-text.error"), function (el) {
+                    el.parentNode.removeChild(el);
+                });
+            }
+
+            // Adds the specified error with the following markup
+            // <p class="red-text error">[message]</p>
+            function addError(messages, error) {
+                var block = document.createElement("p");
+                block.classList.add("red-text");
+                block.classList.add("error");
+                block.innerText = error;
+                messages.appendChild(block);
+            }
+
+            function showSuccess() {
+                // We made it \:D/
+                alert("Success!");
+            }
+
+        })()
+    </script>
+</body>
+
+</html>

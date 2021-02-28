@@ -1,0 +1,3 @@
+environment:
+  base_route: "/notifications"
+  write_debug: "true"
