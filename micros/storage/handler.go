@@ -4,12 +4,14 @@ import (
 	"net/http"
 
 	coreServer "github.com/red-gold/telar-core/server"
+	micros "github.com/red-gold/telar-web/micros"
 	appConfig "github.com/red-gold/telar-web/micros/storage/config"
 	"github.com/red-gold/telar-web/micros/storage/handlers"
 )
 
 func init() {
 	appConfig.InitConfig()
+	micros.InitConfig()
 }
 
 // Cache state
