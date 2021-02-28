@@ -224,7 +224,7 @@ func SignupTokenHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 
 		// Parse code verification page
 		appConfig := coreConfig.AppConfig
-		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
+		prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
 
 		signupVerifyData := &signupVerifyPageData{
 			title:      "Login - Telar Social",

@@ -109,7 +109,7 @@ func LoginPageHandler(server.Request) (handler.Response, error) {
 
 	appConfig := tsconfig.AppConfig
 	authConfig := &cf.AuthConfig
-	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
+	prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
 	loginData := &loginPageData{
 		title:         "Login - Telar Social",
 		orgName:       *appConfig.OrgName,
@@ -206,14 +206,9 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 		if serviceErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
-		filter := struct {
-			ObjectId uuid.UUID `json:"objectId" bson:"objectId"`
-		}{
-			ObjectId: foundUser.ObjectId,
-		}
-		extraFOUND, err := userProfileService.FindOneUserProfile(filter)
-		fmt.Printf("[INFO] foundUser.ObjectId: %s \n ---->>>>>>, %v", uuid.Must(uuid.FromString(foundUser.ObjectId.String())), extraFOUND)
-		foundUserProfile, errProfile := userProfileService.FindByUserId(uuid.Must(uuid.FromString(foundUser.ObjectId.String())))
+
+		fmt.Printf("[INFO] LOGIN HANDLER ---->>>>>>")
+		foundUserProfile, errProfile := userProfileService.FindByUserId(foundUser.ObjectId)
 		if errProfile != nil || foundUserProfile.ObjectId == uuid.Nil {
 			if errProfile != nil {
 				fmt.Printf("\n User profile  %s\n", errProfile.Error())
