@@ -7,7 +7,7 @@ import (
 
 	coreServer "github.com/red-gold/telar-core/server"
 	micros "github.com/red-gold/telar-web/micros"
-	"github.com/red-gold/telar-web/micros/notice/handlers"
+	"github.com/red-gold/telar-web/micros/notifications/handlers"
 )
 
 func init() {

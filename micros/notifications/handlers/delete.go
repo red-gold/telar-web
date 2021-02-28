@@ -8,7 +8,7 @@ import (
 	handler "github.com/openfaas-incubator/go-function-sdk"
 	server "github.com/red-gold/telar-core/server"
 	"github.com/red-gold/telar-core/utils"
-	service "github.com/red-gold/telar-web/micros/notice/services"
+	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
 
 // DeleteNotificationHandle handle delete a Notification
