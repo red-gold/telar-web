@@ -1,8 +1,6 @@
 package function
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
 	coreServer "github.com/red-gold/telar-core/server"
@@ -16,12 +14,9 @@ func init() {
 
 // Cache state
 var server *coreServer.ServerRouter
-var db interface{}
 
 // Handler function
 func Handle(w http.ResponseWriter, r *http.Request) {
-
-	ctx := context.Background()
 
 	// Server Routing
 	if server == nil {
