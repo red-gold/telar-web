@@ -109,7 +109,7 @@ func LoginPageHandler(server.Request) (handler.Response, error) {
 
 	appConfig := tsconfig.AppConfig
 	authConfig := &cf.AuthConfig
-	prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
+	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 	loginData := &loginPageData{
 		title:         "Login - Telar Social",
 		orgName:       *appConfig.OrgName,

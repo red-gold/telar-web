@@ -48,7 +48,7 @@ func ResetPasswordPageHandler(db interface{}) func(http.ResponseWriter, *http.Re
 		if userAuthErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, userAuthErr
 		}
-		prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
+		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
 		html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/reset_password.html", struct {
 			Title         string
@@ -87,7 +87,7 @@ func ResetPasswordPageHandler(db interface{}) func(http.ResponseWriter, *http.Re
 func ForgetPasswordPageHandler(req server.Request) (handler.Response, error) {
 	appConfig := tsconfig.AppConfig
 	authConfig := cf.AuthConfig
-	loginURL := utils.GetPrettyURLf(*authConfig.BaseRoute + "/login")
+	loginURL := utils.GetPrettyURLf(authConfig.BaseRoute + "/login")
 	html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/forget_password.html", struct {
 		Title      string
 		OrgName    string
@@ -176,7 +176,7 @@ func ForgetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.R
 
 		email := utils.NewEmail(*appConfig.RefEmail, *appConfig.RefEmailPass, *appConfig.SmtpEmail)
 		emailReq := utils.NewEmailRequest([]string{foundUserAuth.Username}, "Reset Password", "")
-		prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
+		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
 		emailResStatus, emailResErr := email.SendEmail(emailReq, "html_template/email_link_verify_reset_pass.html", struct {
 			Name    string

@@ -54,7 +54,7 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 			Code:  query.Get("code"),
 			Token: query.Get("verificaitonSecret"),
 		}
-		prettyURL := utils.GetPrettyURLf(*authConfig.BaseRoute)
+		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
 		signupVerifyData := &signupVerifyPageData{
 			title:      "Login - Telar Social",

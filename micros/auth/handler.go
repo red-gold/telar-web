@@ -7,6 +7,7 @@ import (
 
 	coreServer "github.com/red-gold/telar-core/server"
 	micros "github.com/red-gold/telar-web/micros"
+	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/handlers"
 )
 
@@ -16,6 +17,7 @@ var db interface{}
 
 func init() {
 	micros.InitConfig()
+	authConfig.InitConfig()
 }
 
 // Handler function
