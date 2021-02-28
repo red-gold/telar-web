@@ -21,7 +21,6 @@ import (
 	tsconfig "github.com/red-gold/telar-core/config"
 	server "github.com/red-gold/telar-core/server"
 	"github.com/red-gold/telar-core/utils"
-	actionModels "github.com/red-gold/telar-web/micros/actions/models"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/provider"
 	settingModels "github.com/red-gold/telar-web/micros/setting/models"
@@ -51,6 +50,15 @@ type TokenModel struct {
 	organizationList string
 	profile          *provider.Profile
 	claim            UserClaim
+}
+
+type CreateActionRoomModel struct {
+	ObjectId    uuid.UUID `json:"objectId"`
+	OwnerUserId uuid.UUID `json:"ownerUserId"`
+	PrivateKey  string    `json:"privateKey"`
+	AccessKey   string    `json:"accessKey"`
+	Status      int       `json:"status"`
+	CreatedDate int64     `json:"created_date"`
 }
 
 // TelarSocailClaims extends standard claims
@@ -345,7 +353,7 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 	}
 
 	// Send request for action room
-	actionRoomModel := actionModels.CreateActionRoomModel{
+	actionRoomModel := CreateActionRoomModel{
 		OwnerUserId: userId,
 		PrivateKey:  privateKey.String(),
 		AccessKey:   accessKey.String(),
