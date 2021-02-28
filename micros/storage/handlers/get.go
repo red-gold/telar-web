@@ -20,7 +20,7 @@ func init() {
 }
 
 // GetFileHandle a function invocation
-func GetFileHandle(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func GetFileHandle() func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
 
 	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
 

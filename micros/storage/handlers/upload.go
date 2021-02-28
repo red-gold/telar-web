@@ -20,7 +20,7 @@ import (
 )
 
 // UploadeHandle a function invocation
-func UploadeHandle(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func UploadeHandle() func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
