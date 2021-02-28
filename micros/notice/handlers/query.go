@@ -11,8 +11,8 @@ import (
 	handler "github.com/openfaas-incubator/go-function-sdk"
 	server "github.com/red-gold/telar-core/server"
 	utils "github.com/red-gold/telar-core/utils"
-	models "github.com/red-gold/telar-web/micros/notifications/models"
-	service "github.com/red-gold/telar-web/micros/notifications/services"
+	models "github.com/red-gold/telar-web/micros/notice/models"
+	service "github.com/red-gold/telar-web/micros/notice/services"
 )
 
 // GetNotificationsByUserIdHandle handle query on notification

@@ -62,10 +62,10 @@ functions:
       telar.dev.repo: telar-web
     annotations:
       linkerd.io/inject: disabled
-  notifications:
+  notice:
     lang: golang-middleware
-    handler: ./micros/notifications
-    image: qolzam/notifications:v0.170
+    handler: ./micros/notice
+    image: qolzam/notice:v0.170
     fprocess: ""
     environment: {}
     secrets:

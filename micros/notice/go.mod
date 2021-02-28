@@ -1,4 +1,4 @@
-module github.com/red-gold/telar-web/micros/notifications
+module github.com/red-gold/telar-web/micros/notice
 
 go 1.15
 

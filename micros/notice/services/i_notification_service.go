@@ -3,7 +3,7 @@ package service
 import (
 	uuid "github.com/gofrs/uuid"
 	coreData "github.com/red-gold/telar-core/data"
-	dto "github.com/red-gold/telar-web/micros/notifications/dto"
+	dto "github.com/red-gold/telar-web/micros/notice/dto"
 )
 
 type NotificationService interface {

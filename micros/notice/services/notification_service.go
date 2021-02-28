@@ -10,7 +10,7 @@ import (
 	"github.com/red-gold/telar-core/data/mongodb"
 	mongoRepo "github.com/red-gold/telar-core/data/mongodb"
 	"github.com/red-gold/telar-core/utils"
-	dto "github.com/red-gold/telar-web/micros/notifications/dto"
+	dto "github.com/red-gold/telar-web/micros/notice/dto"
 )
 
 // NotificationService handlers with injected dependencies
