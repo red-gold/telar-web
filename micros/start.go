@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -251,43 +252,60 @@ func loadSecretsFromEnv(newCoreConfig *config.Configuration) {
 
 	payloadSecret, ok := os.LookupEnv("payload_secret")
 	if ok {
+		payloadSecret = decodeBase64(payloadSecret)
 		newCoreConfig.PayloadSecret = &payloadSecret
 		log.Printf("[INFO]: Payload secret information loaded from env.")
 	}
 
 	publicKey, ok := os.LookupEnv("key_pub")
 	if ok {
+		publicKey = decodeBase64(publicKey)
 		newCoreConfig.PublicKey = &publicKey
 		log.Printf("[INFO]: Public key information loaded from env.")
 	}
 
 	privateKey, ok := os.LookupEnv("key")
 	if ok {
+		privateKey = decodeBase64(privateKey)
 		newCoreConfig.PrivateKey = &privateKey
 		log.Printf("[INFO]: Private key information loaded from env.")
 	}
 
 	recaptchaKey, ok := os.LookupEnv("recaptcha_key")
 	if ok {
+		recaptchaKey = decodeBase64(recaptchaKey)
 		newCoreConfig.RecaptchaKey = &recaptchaKey
 		log.Printf("[INFO]: Recaptcha key information loaded from env.")
 	}
 
 	mongoDBHost, ok := os.LookupEnv("mongo_host")
 	if ok {
+		mongoDBHost = decodeBase64(mongoDBHost)
 		newCoreConfig.MongoDBHost = &mongoDBHost
 		log.Printf("[INFO]: MongoDB host information loaded from env.")
 	}
 
 	mongoDB, ok := os.LookupEnv("mongo_database")
 	if ok {
+		mongoDB = decodeBase64(mongoDB)
 		newCoreConfig.Database = &mongoDB
 		log.Printf("[INFO]: Database name information loaded from env.")
 	}
 
 	refEmailPass, ok := os.LookupEnv("ref_email_pass")
 	if ok {
+		refEmailPass = decodeBase64(refEmailPass)
 		newCoreConfig.RefEmailPass = &refEmailPass
 		log.Printf("[INFO]: Ref email password information loaded from env.")
 	}
+}
+
+// decodeBase64 Decode base64 string
+func decodeBase64(encodedString string) string {
+	base64Value, err := base64.StdEncoding.DecodeString(encodedString)
+	fmt.Println("[ERROR] decode secret base64 value with value:  ", encodedString, " - ", err.Error())
+	if err != nil {
+		panic(err)
+	}
+	return string(base64Value)
 }
