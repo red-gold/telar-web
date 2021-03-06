@@ -249,43 +249,43 @@ func loadSecretsFromFile(newCoreConfig *config.Configuration) {
 // loadSecretsFromEnv Load secrets from environment variables
 func loadSecretsFromEnv(newCoreConfig *config.Configuration) {
 
-	payloadSecret, ok := os.LookupEnv(payloadSecretKey)
+	payloadSecret, ok := os.LookupEnv("payload_secret")
 	if ok {
 		newCoreConfig.PayloadSecret = &payloadSecret
 		log.Printf("[INFO]: Payload secret information loaded from env.")
 	}
 
-	publicKey, ok := os.LookupEnv(publicKeySecretKey)
+	publicKey, ok := os.LookupEnv("key_pub")
 	if ok {
 		newCoreConfig.PublicKey = &publicKey
 		log.Printf("[INFO]: Public key information loaded from env.")
 	}
 
-	privateKey, ok := os.LookupEnv(privateKeySecretKey)
+	privateKey, ok := os.LookupEnv("key")
 	if ok {
 		newCoreConfig.PrivateKey = &privateKey
 		log.Printf("[INFO]: Private key information loaded from env.")
 	}
 
-	recaptchaKey, ok := os.LookupEnv(recaptchaSecretKey)
+	recaptchaKey, ok := os.LookupEnv("recaptcha_key")
 	if ok {
 		newCoreConfig.RecaptchaKey = &recaptchaKey
 		log.Printf("[INFO]: Recaptcha key information loaded from env.")
 	}
 
-	mongoDBHost, ok := os.LookupEnv(mongoHostSecretKey)
+	mongoDBHost, ok := os.LookupEnv("mongo_host")
 	if ok {
 		newCoreConfig.MongoDBHost = &mongoDBHost
 		log.Printf("[INFO]: MongoDB host information loaded from env.")
 	}
 
-	mongoDB, ok := os.LookupEnv(mongoDatabaseSecretKey)
+	mongoDB, ok := os.LookupEnv("mongo_database")
 	if ok {
 		newCoreConfig.Database = &mongoDB
 		log.Printf("[INFO]: Database name information loaded from env.")
 	}
 
-	refEmailPass, ok := os.LookupEnv(refEmailPassSecretKey)
+	refEmailPass, ok := os.LookupEnv("ref_email_pass")
 	if ok {
 		newCoreConfig.RefEmailPass = &refEmailPass
 		log.Printf("[INFO]: Ref email password information loaded from env.")
