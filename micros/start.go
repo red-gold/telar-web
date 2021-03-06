@@ -53,6 +53,7 @@ func Start(ctx context.Context) (interface{}, error) {
 	return nil, fmt.Errorf("Please set valid database type in confing file!")
 }
 
+// getAllConfigFromFile get all config from files
 func getAllConfigFromFile() map[string][]byte {
 	filePaths := []string{}
 	for _, v := range secretKeys {
@@ -61,50 +62,19 @@ func getAllConfigFromFile() map[string][]byte {
 	return coreUtils.GetFilesContents(filePaths...)
 }
 
+// getAllConfiguration get all configuration
 func getAllConfiguration() *config.Configuration {
-	filesConfig := getAllConfigFromFile()
 	var newCoreConfig config.Configuration
-	// Load from files //
-	if filesConfig[basePath+payloadSecretKey] != nil {
-		payloadSecret := string(filesConfig[basePath+payloadSecretKey])
-		newCoreConfig.PayloadSecret = &payloadSecret
-		log.Printf("[INFO]: Payload secret information loaded from env.")
-	}
 
-	if filesConfig[basePath+publicKeySecretKey] != nil {
-		publicKey := string(filesConfig[basePath+publicKeySecretKey])
-		newCoreConfig.PublicKey = &publicKey
-		log.Printf("[INFO]: Public key information loaded from env.")
-	}
-
-	if filesConfig[basePath+privateKeySecretKey] != nil {
-		privateKey := string(filesConfig[basePath+privateKeySecretKey])
-		newCoreConfig.PrivateKey = &privateKey
-		log.Printf("[INFO]: Private key information loaded from env.")
-	}
-
-	if filesConfig[basePath+recaptchaSecretKey] != nil {
-		recaptchaKey := string(filesConfig[basePath+recaptchaSecretKey])
-		newCoreConfig.RecaptchaKey = &recaptchaKey
-		log.Printf("[INFO]: Recaptcha key information loaded from env.")
-	}
-
-	if filesConfig[basePath+mongoHostSecretKey] != nil {
-		mongoDBHost := string(filesConfig[basePath+mongoHostSecretKey])
-		newCoreConfig.MongoDBHost = &mongoDBHost
-		log.Printf("[INFO]: MongoDB host information loaded from env.")
-	}
-
-	if filesConfig[basePath+mongoDatabaseSecretKey] != nil {
-		mongoDB := string(filesConfig[basePath+mongoDatabaseSecretKey])
-		newCoreConfig.Database = &mongoDB
-		log.Printf("[INFO]: Database name information loaded from env.")
-	}
-
-	if filesConfig[basePath+refEmailPassSecretKey] != nil {
-		refEmailPass := string(filesConfig[basePath+refEmailPassSecretKey])
-		newCoreConfig.RefEmailPass = &refEmailPass
-		log.Printf("[INFO]: Ref email password information loaded from env.")
+	loadSecretMode, ok := os.LookupEnv("load_secret_mode")
+	if ok {
+		log.Printf("[INFO]: Load secret mode information loaded from env.")
+		if loadSecretMode == "env" {
+			loadSecretsFromEnv(&newCoreConfig)
+		}
+	} else {
+		log.Printf("[INFO]: No secret mode in env. Secrets are loading from file.")
+		loadSecretsFromFile(&newCoreConfig)
 	}
 
 	// Load from environment //
@@ -226,4 +196,98 @@ func getAllConfiguration() *config.Configuration {
 		log.Printf("[INFO]: Database type information loaded from env.")
 	}
 	return &newCoreConfig
+}
+
+// loadSecretsFromFile Load secrets from file
+func loadSecretsFromFile(newCoreConfig *config.Configuration) {
+	filesConfig := getAllConfigFromFile()
+
+	// Load from files //
+	if filesConfig[basePath+payloadSecretKey] != nil {
+		payloadSecret := string(filesConfig[basePath+payloadSecretKey])
+		newCoreConfig.PayloadSecret = &payloadSecret
+		log.Printf("[INFO]: Payload secret information loaded from env.")
+	}
+
+	if filesConfig[basePath+publicKeySecretKey] != nil {
+		publicKey := string(filesConfig[basePath+publicKeySecretKey])
+		newCoreConfig.PublicKey = &publicKey
+		log.Printf("[INFO]: Public key information loaded from env.")
+	}
+
+	if filesConfig[basePath+privateKeySecretKey] != nil {
+		privateKey := string(filesConfig[basePath+privateKeySecretKey])
+		newCoreConfig.PrivateKey = &privateKey
+		log.Printf("[INFO]: Private key information loaded from env.")
+	}
+
+	if filesConfig[basePath+recaptchaSecretKey] != nil {
+		recaptchaKey := string(filesConfig[basePath+recaptchaSecretKey])
+		newCoreConfig.RecaptchaKey = &recaptchaKey
+		log.Printf("[INFO]: Recaptcha key information loaded from env.")
+	}
+
+	if filesConfig[basePath+mongoHostSecretKey] != nil {
+		mongoDBHost := string(filesConfig[basePath+mongoHostSecretKey])
+		newCoreConfig.MongoDBHost = &mongoDBHost
+		log.Printf("[INFO]: MongoDB host information loaded from env.")
+	}
+
+	if filesConfig[basePath+mongoDatabaseSecretKey] != nil {
+		mongoDB := string(filesConfig[basePath+mongoDatabaseSecretKey])
+		newCoreConfig.Database = &mongoDB
+		log.Printf("[INFO]: Database name information loaded from env.")
+	}
+
+	if filesConfig[basePath+refEmailPassSecretKey] != nil {
+		refEmailPass := string(filesConfig[basePath+refEmailPassSecretKey])
+		newCoreConfig.RefEmailPass = &refEmailPass
+		log.Printf("[INFO]: Ref email password information loaded from env.")
+	}
+}
+
+// loadSecretsFromEnv Load secrets from environment variables
+func loadSecretsFromEnv(newCoreConfig *config.Configuration) {
+
+	payloadSecret, ok := os.LookupEnv(payloadSecretKey)
+	if ok {
+		newCoreConfig.PayloadSecret = &payloadSecret
+		log.Printf("[INFO]: Payload secret information loaded from env.")
+	}
+
+	publicKey, ok := os.LookupEnv(publicKeySecretKey)
+	if ok {
+		newCoreConfig.PublicKey = &publicKey
+		log.Printf("[INFO]: Public key information loaded from env.")
+	}
+
+	privateKey, ok := os.LookupEnv(privateKeySecretKey)
+	if ok {
+		newCoreConfig.PrivateKey = &privateKey
+		log.Printf("[INFO]: Private key information loaded from env.")
+	}
+
+	recaptchaKey, ok := os.LookupEnv(recaptchaSecretKey)
+	if ok {
+		newCoreConfig.RecaptchaKey = &recaptchaKey
+		log.Printf("[INFO]: Recaptcha key information loaded from env.")
+	}
+
+	mongoDBHost, ok := os.LookupEnv(mongoHostSecretKey)
+	if ok {
+		newCoreConfig.MongoDBHost = &mongoDBHost
+		log.Printf("[INFO]: MongoDB host information loaded from env.")
+	}
+
+	mongoDB, ok := os.LookupEnv(mongoDatabaseSecretKey)
+	if ok {
+		newCoreConfig.Database = &mongoDB
+		log.Printf("[INFO]: Database name information loaded from env.")
+	}
+
+	refEmailPass, ok := os.LookupEnv(refEmailPassSecretKey)
+	if ok {
+		newCoreConfig.RefEmailPass = &refEmailPass
+		log.Printf("[INFO]: Ref email password information loaded from env.")
+	}
 }
