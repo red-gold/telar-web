@@ -12,8 +12,10 @@ import (
 )
 
 const (
-	basePath             = "/var/openfaas/secrets/"
-	oauthClientSecretKey = "ts-client-secret"
+	basePath               = "/var/openfaas/secrets/"
+	oauthClientSecretKey   = "ts-client-secret"
+	adminUsernameSecretKey = "admin-username"
+	adminPasswordSecretKey = "admin-password"
 )
 
 var secretKeys = []string{oauthClientSecretKey}
@@ -134,26 +136,55 @@ func loadAllConfig() {
 // loadSecretsFromFile Load secrets from file
 func loadSecretsFromFile() {
 	filesConfig := getAllConfigFromFile()
+
 	if filesConfig[basePath+oauthClientSecretKey] != nil {
 		oauthClientSecret := string(filesConfig[basePath+oauthClientSecretKey])
 		AuthConfig.OAuthClientSecret = oauthClientSecret
 		log.Printf("[INFO]: OAuth client secret information loaded from env.")
 	}
 
+	if filesConfig[basePath+adminUsernameSecretKey] != nil {
+		adminUsername := string(filesConfig[basePath+adminUsernameSecretKey])
+		AuthConfig.AdminUsername = adminUsername
+		log.Printf("[INFO]: Admin username information loaded from env.")
+	}
+
+	if filesConfig[basePath+adminPasswordSecretKey] != nil {
+		adminPassword := string(filesConfig[basePath+adminPasswordSecretKey])
+		AuthConfig.AdminPassword = adminPassword
+		log.Printf("[INFO]: Admin password information loaded from env.")
+	}
+
 }
 
 // loadSecretsFromEnv Load secrets from environment variables
 func loadSecretsFromEnv() {
+
 	oauthClientSecret, ok := os.LookupEnv("ts_client_secret")
 	if ok {
 		oauthClientSecret = decodeBase64(oauthClientSecret)
 		AuthConfig.OAuthClientSecret = oauthClientSecret
 		log.Printf("[INFO]: OAuth client secret information loaded from env.")
 	}
+
+	adminUsername, ok := os.LookupEnv("admin_username")
+	if ok {
+		adminUsername = decodeBase64(adminUsername)
+		AuthConfig.AdminUsername = adminUsername
+		log.Printf("[INFO]: Admin username information loaded from env.")
+	}
+
+	adminPassword, ok := os.LookupEnv("admin_password")
+	if ok {
+		adminPassword = decodeBase64(adminPassword)
+		AuthConfig.AdminPassword = adminPassword
+		log.Printf("[INFO]: Admin password information loaded from env.")
+	}
 }
 
 // decodeBase64 Decode base64 string
 func decodeBase64(encodedString string) string {
+
 	base64Value, err := base64.StdEncoding.DecodeString(encodedString)
 	fmt.Println("[ERROR] decode secret base64 value with value:  ", encodedString, " - ", err.Error())
 	if err != nil {

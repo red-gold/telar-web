@@ -10,6 +10,8 @@ type (
 		ClientID               string
 		ClientSecret           string
 		OAuthClientSecret      string
+		AdminUsername          string
+		AdminPassword          string
 		ExternalRedirectDomain string
 		Scope                  string
 		CookieRootDomain       string

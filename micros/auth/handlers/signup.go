@@ -244,20 +244,11 @@ func SignupTokenHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 // AdminSignupHandle verify signup token
 func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
 	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-
+		authConfig := &ac.AuthConfig
 		fullName := "admin"
-		email, passErr := utils.ReadSecret("admin-username")
-		if passErr != nil {
-			errorMessage := fmt.Sprintf("Read admin email secret error! error: %s", passErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("adminEmailError", errorMessage)},
-				nil
-		}
-		password, passErr := utils.ReadSecret("admin-password")
-		if passErr != nil {
-			errorMessage := fmt.Sprintf("Read admin password secret error! error: %s", passErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("adminPasswordError", errorMessage)},
-				nil
-		}
+
+		email := authConfig.AdminUsername
+		password := authConfig.AdminPassword
 
 		// Create service
 		userAuthService, serviceErr := service.NewUserAuthService(db)
