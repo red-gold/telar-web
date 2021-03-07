@@ -9,7 +9,7 @@ type (
 		OAuthTelarBaseURL      string
 		ClientID               string
 		ClientSecret           string
-		OAuthClientSecretPath  string // OAuthClientSecretPath when given overrides the ClientSecret env-var
+		OAuthClientSecret      string
 		ExternalRedirectDomain string
 		Scope                  string
 		CookieRootDomain       string

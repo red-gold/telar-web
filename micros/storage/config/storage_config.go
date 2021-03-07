@@ -2,13 +2,13 @@ package config
 
 type (
 	Configuration struct {
-		BaseRoute         string
-		StorageSecretPath string
-		ExternalDomain    string
-		BucketName        string
-		RedisAddress      string
-		QueryPrettyURL    bool
-		Debug             bool // Debug enables verbose logging of claims / cookies
+		BaseRoute      string
+		StorageSecret  string
+		ExternalDomain string
+		BucketName     string
+		RedisAddress   string
+		QueryPrettyURL bool
+		Debug          bool // Debug enables verbose logging of claims / cookies
 	}
 )
 

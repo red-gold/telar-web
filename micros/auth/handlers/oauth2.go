@@ -184,12 +184,8 @@ func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, 
 
 		clientSecret := config.ClientSecret
 
-		if len(config.OAuthClientSecretPath) > 0 {
-			clientSecretBytes, err := ioutil.ReadFile(config.OAuthClientSecretPath)
-			if err != nil {
-				log.Fatalf("OAuthClientSecretPath, unable to read path: %s, error: %s", config.OAuthClientSecretPath, err.Error())
-			}
-			clientSecret = strings.TrimSpace(string(clientSecretBytes))
+		if len(config.OAuthClientSecret) > 0 {
+			clientSecret = strings.TrimSpace(config.OAuthClientSecret)
 		}
 
 		log.Printf(`OAuth 2 - "%s"`, r.URL.Path)

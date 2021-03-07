@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -13,12 +12,8 @@ const cacheTimeout = 7200
 
 func generateV4GetObjectSignedURL(bucketName string, objectName string, serviceAccount string) (string, error) {
 	// [START storage_generate_signed_url_v4]
-	jsonKey, err := ioutil.ReadFile(serviceAccount)
-	if err != nil {
-		return "", fmt.Errorf("cannot read the JSON key file, err: %v", err)
-	}
 
-	conf, err := google.JWTConfigFromJSON(jsonKey)
+	conf, err := google.JWTConfigFromJSON([]byte(serviceAccount))
 	if err != nil {
 		return "", fmt.Errorf("google.JWTConfigFromJSON: %v", err)
 	}

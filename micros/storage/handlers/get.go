@@ -78,7 +78,7 @@ func GetFileHandle() func(http.ResponseWriter, *http.Request, server.Request) (h
 		objectName := fmt.Sprintf("%s/%s/%s", userUUID, dirName, fileName)
 
 		// Generate download URL
-		downloadURL, urlErr := generateV4GetObjectSignedURL(storageConfig.BucketName, objectName, storageConfig.StorageSecretPath)
+		downloadURL, urlErr := generateV4GetObjectSignedURL(storageConfig.BucketName, objectName, storageConfig.StorageSecret)
 		if urlErr != nil {
 			fmt.Println(urlErr.Error())
 		}
