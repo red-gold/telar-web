@@ -115,8 +115,8 @@ func loadSecretsFromEnv() {
 // decodeBase64 Decode base64 string
 func decodeBase64(encodedString string) string {
 	base64Value, err := base64.StdEncoding.DecodeString(encodedString)
-	fmt.Println("[ERROR] decode secret base64 value with value:  ", encodedString, " - ", err.Error())
 	if err != nil {
+		fmt.Println("[ERROR] decode secret base64 value with value:  ", encodedString, " - ", err.Error())
 		panic(err)
 	}
 	return string(base64Value)
