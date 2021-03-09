@@ -79,6 +79,7 @@ func SignupPageHandler(server.Request) (handler.Response, error) {
 
 	appConfig := coreConfig.AppConfig
 	authConfig := &ac.AuthConfig
+	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 	html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/signup.html", struct {
 		Title        string
 		OrgName      string
@@ -94,7 +95,7 @@ func SignupPageHandler(server.Request) (handler.Response, error) {
 		OrgAvatar:    *appConfig.OrgAvatar,
 		AppName:      *appConfig.AppName,
 		ActionForm:   "",
-		LoginLink:    "",
+		LoginLink:    prettyURL + "/login",
 		RecaptchaKey: *appConfig.RecaptchaSiteKey,
 		VerifyType:   authConfig.VerifyType,
 	})

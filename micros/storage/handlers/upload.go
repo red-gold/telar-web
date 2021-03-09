@@ -70,7 +70,7 @@ func UploadeHandle() func(http.ResponseWriter, *http.Request, server.Request) (h
 			StorageBucket: storageConfig.BucketName,
 		}
 
-		opt := option.WithCredentialsFile(storageConfig.StorageSecretPath)
+		opt := option.WithCredentialsFile(storageConfig.StorageSecret)
 		app, err := firebase.NewApp(ctx, config, opt)
 		if err != nil {
 			log.Fatalln(err)

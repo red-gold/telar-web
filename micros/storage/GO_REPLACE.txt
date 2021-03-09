@@ -1,0 +1,3 @@
+replace github.com/red-gold/telar-web/micros/storage/handlers => ./function/handlers
+replace github.com/red-gold/telar-web/micros/storage/config => ./function/config
+replace github.com/red-gold/telar-web/micros/storage => ./function
