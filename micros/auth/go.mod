@@ -8,7 +8,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/google/uuid v1.2.0
 	github.com/openfaas-incubator/go-function-sdk v0.0.0-20200405082418-b31e65bf8a33
-	github.com/red-gold/telar-core v0.1.4
+	github.com/red-gold/telar-core v0.1.5
 	github.com/red-gold/telar-web v0.1.27
 	github.com/red-gold/telar-web/micros/setting v0.0.0-20210228035214-84737143b022
 	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93

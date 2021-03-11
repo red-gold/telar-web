@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openfaas-incubator/go-function-sdk v0.0.0-20200405082418-b31e65bf8a33
-	github.com/red-gold/telar-core v0.1.4
+	github.com/red-gold/telar-core v0.1.5
 	github.com/red-gold/telar-web v0.1.25
 	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
 	google.golang.org/api v0.40.0
