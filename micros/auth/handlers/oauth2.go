@@ -338,7 +338,7 @@ func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, 
 
 		}
 
-		webURL := utils.GetPrettyURLf("/web")
+		webURL := config.ExternalRedirectDomain
 
 		return handler.Response{
 			Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + webURL + `");</script></html>`),

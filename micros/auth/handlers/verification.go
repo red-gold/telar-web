@@ -220,7 +220,7 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 		}
 
 		fmt.Printf("\nSession is created: %s \n", session)
-		webURL := utils.GetPrettyURLf("/web")
+		webURL := authConfig.ExternalRedirectDomain
 		http.Redirect(w, r, webURL, http.StatusTemporaryRedirect)
 		return handler.Response{
 			StatusCode: http.StatusTemporaryRedirect,

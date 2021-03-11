@@ -207,7 +207,6 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
 
-		fmt.Printf("[INFO] LOGIN HANDLER ---->>>>>>")
 		foundUserProfile, errProfile := userProfileService.FindByUserId(foundUser.ObjectId)
 		if errProfile != nil || foundUserProfile.ObjectId == uuid.Nil {
 			if errProfile != nil {
@@ -216,7 +215,7 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			loginData.message = "User Profile error!"
 			return loginPageResponse(loginData)
 		}
-		fmt.Printf("[INFO] Found user profile: %v", foundUserProfile)
+
 		tokenModel := &TokenModel{
 			token:            ProviderAccessToken{},
 			oauthProvider:    nil,
@@ -243,7 +242,7 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 		// Write session on cookie
 		writeSessionOnCookie(w, session, authConfig)
 		fmt.Printf("\nSession is created: %s \n", session)
-		webURL := utils.GetPrettyURLf("/web")
+		webURL := authConfig.ExternalRedirectDomain
 
 		fmt.Printf("\nwebURL: %s \n", webURL)
 		return handler.Response{
