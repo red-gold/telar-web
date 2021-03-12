@@ -252,7 +252,7 @@ func functionCallByHeader(method string, bytesReq []byte, url string, header map
 	prettyURL := utils.GetPrettyURLf(url)
 	bodyReader := bytes.NewBuffer(bytesReq)
 
-	httpReq, httpErr := http.NewRequest(method, *coreConfig.AppConfig.Gateway+prettyURL, bodyReader)
+	httpReq, httpErr := http.NewRequest(method, *coreConfig.AppConfig.InternalGateway+prettyURL, bodyReader)
 	if httpErr != nil {
 		return nil, httpErr
 	}

@@ -355,8 +355,9 @@ func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 func functionCall(bytesReq []byte, url string) ([]byte, error) {
 	prettyURL := utils.GetPrettyURLf(url)
 	bodyReader := bytes.NewBuffer(bytesReq)
-
-	httpReq, httpErr := http.NewRequest(http.MethodPost, *coreConfig.AppConfig.Gateway+prettyURL, bodyReader)
+	uri := *coreConfig.AppConfig.InternalGateway + prettyURL
+	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
+	httpReq, httpErr := http.NewRequest(http.MethodPost, uri, bodyReader)
 	if httpErr != nil {
 		return nil, httpErr
 	}
