@@ -21,6 +21,9 @@ func functionCall(bytesReq []byte, url string) ([]byte, error) {
 	prettyURL := utils.GetPrettyURLf(url)
 	bodyReader := bytes.NewBuffer(bytesReq)
 
+	uri := *coreConfig.AppConfig.InternalGateway + prettyURL
+	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
+
 	httpReq, httpErr := http.NewRequest(http.MethodPost, *coreConfig.AppConfig.InternalGateway+prettyURL, bodyReader)
 	if httpErr != nil {
 		return nil, httpErr

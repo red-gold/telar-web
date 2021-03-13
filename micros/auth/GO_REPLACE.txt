@@ -1,3 +1,4 @@
 replace github.com/red-gold/telar-web/micros/auth/handlers => ./function/handlers
 replace github.com/red-gold/telar-web/micros/auth/config => ./function/config
 replace github.com/red-gold/telar-web/micros/auth => ./function
+replace github.com/red-gold/telar-core => github.com/red-gold/telar-core v0.1.6
