@@ -1,8 +1,7 @@
 package service
 
 const (
-	userAuthCollectionName         = "userAuth"
-	userVerificationCollectionName = "userVerification"
+	userProfileCollectionName = "userProfile"
 )
 
 const (

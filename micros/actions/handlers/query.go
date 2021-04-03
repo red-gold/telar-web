@@ -87,12 +87,10 @@ func VerifyAccessKeyHandle(db interface{}) func(server.Request) (handler.Respons
 
 	return func(req server.Request) (handler.Response, error) {
 
-		// actions/room/verify/:accessKey
-		accessKey := req.GetParamByName("accessKey")
-		if accessKey == "" {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("accessKeyRequiredError", "Access key is required!")},
-				nil
+		var model models.ActionVerifyModel
+		if err := json.Unmarshal(req.Body, &model); err != nil {
+			errorMessage := fmt.Sprintf("Unmarshal ActionVerifyModel Error %s", err.Error())
+			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("modelMarshalError", errorMessage)}, nil
 		}
 
 		// Create service
@@ -101,7 +99,7 @@ func VerifyAccessKeyHandle(db interface{}) func(server.Request) (handler.Respons
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
 
-		isVerified, err := actionRoomService.VerifyAccessKey(req.UserID, accessKey)
+		isVerified, err := actionRoomService.VerifyAccessKey(req.UserID, model.AccessKey)
 		if err != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, err
 		}

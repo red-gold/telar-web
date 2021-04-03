@@ -42,9 +42,15 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Server is nil")
 		server = coreServer.NewServerRouter()
 		server.GET("/my", handlers.ReadMyProfileHandle(db), coreServer.RouteProtectionCookie)
-		server.GET("/", handlers.QueryUserProfileHandle(db), coreServer.RouteProtectionCookie)
+		server.GETWR("/", handlers.QueryUserProfileHandle(db), coreServer.RouteProtectionCookie)
 		server.GET("/id/:userId", handlers.ReadProfileHandle(db), coreServer.RouteProtectionCookie)
 		server.POST("/index", handlers.InitProfileIndexHandle(db), coreServer.RouteProtectionHMAC)
+		server.PUT("/last-seen", handlers.UpdateLastSeen(db), coreServer.RouteProtectionCookie)
+
+		// Invoke between functions and protected by HMAC
+		server.PUTWR("/", handlers.UpdateProfileHandle(db), coreServer.RouteProtectionHMAC)
+		server.GET("/dto/id/:userId", handlers.ReadDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
+		server.POST("/dto", handlers.CreateDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
 	}
 	server.ServeHTTP(w, r)
 }

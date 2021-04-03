@@ -3,36 +3,34 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
+	"github.com/gofrs/uuid"
 	handler "github.com/openfaas-incubator/go-function-sdk"
 	server "github.com/red-gold/telar-core/server"
 	utils "github.com/red-gold/telar-core/utils"
-	service "github.com/red-gold/telar-web/micros/auth/services"
+	service "github.com/red-gold/telar-web/micros/profile/services"
 )
 
 // QueryUserProfileHandle handle queru on userProfile
-func QueryUserProfileHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func QueryUserProfileHandle(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
 
-	return func(req server.Request) (handler.Response, error) {
+	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
 		// Create service
 		userService, serviceErr := service.NewUserProfileService(db)
 		if serviceErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
 
-		var query *url.Values
-		if len(req.QueryString) > 0 {
-			q, err := url.ParseQuery(string(req.QueryString))
-			if err != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, err
-			}
-			query = &q
+		if err := r.ParseForm(); err != nil {
+			log.Printf("Error parsing form: %s", err)
+
 		}
-		searchParam := query.Get("search")
-		pageParam := query.Get("page")
+
+		searchParam := r.Form.Get("search")
+		pageParam := r.Form.Get("page")
 		page := 0
 		if pageParam != "" {
 			var strErr error
@@ -41,7 +39,17 @@ func QueryUserProfileHandle(db interface{}) func(server.Request) (handler.Respon
 				return handler.Response{StatusCode: http.StatusInternalServerError}, strErr
 			}
 		}
-		userList, err := userService.QueryUserProfile(searchParam, "created_date", int64(page))
+		var nin []uuid.UUID
+		for _, v := range r.Form["nin"] {
+			parsedUUID, uuidErr := uuid.FromString(v)
+
+			if uuidErr != nil {
+				return handler.Response{StatusCode: http.StatusInternalServerError}, uuidErr
+			}
+
+			nin = append(nin, parsedUUID)
+		}
+		userList, err := userService.QueryUserProfile(searchParam, "created_date", int64(page), nin)
 		if err != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, err
 		}

@@ -54,7 +54,7 @@ func SetupHandler() func(http.ResponseWriter, *http.Request, server.Request) (ha
 		}
 		// Create post index
 		postIndexURL := "/posts/index"
-		_, postIndexErr := functionCall([]byte(""), postIndexURL)
+		_, postIndexErr := functionCall([]byte(""), postIndexURL, http.MethodPost)
 
 		if postIndexErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError,
@@ -65,7 +65,7 @@ func SetupHandler() func(http.ResponseWriter, *http.Request, server.Request) (ha
 
 		// Create profile index
 		profileIndexURL := "/profile/index"
-		_, profileIndexErr := functionCall([]byte(""), profileIndexURL)
+		_, profileIndexErr := functionCall([]byte(""), profileIndexURL, http.MethodPost)
 
 		if profileIndexErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError,

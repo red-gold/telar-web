@@ -13,7 +13,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gofrs/uuid"
 	handler "github.com/openfaas-incubator/go-function-sdk"
 	tsconfig "github.com/red-gold/telar-core/config"
 	server "github.com/red-gold/telar-core/server"
@@ -180,7 +179,7 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 		}
 
 		foundUser, err := userAuthService.FindByUsername(model.Username)
-		if err != nil || foundUser.ObjectId == uuid.Nil {
+		if err != nil || foundUser == nil {
 			if err != nil {
 				fmt.Printf("\n User not found %s\n", err.Error())
 			}
@@ -202,13 +201,8 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			return loginPageResponse(loginData)
 		}
 
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUserProfile, errProfile := userProfileService.FindByUserId(foundUser.ObjectId)
-		if errProfile != nil || foundUserProfile.ObjectId == uuid.Nil {
+		foundUserProfile, errProfile := getUserProfileByID(foundUser.ObjectId)
+		if errProfile != nil || foundUserProfile == nil {
 			if errProfile != nil {
 				fmt.Printf("\n User profile  %s\n", errProfile.Error())
 			}
@@ -296,6 +290,13 @@ func LoginAdminHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 				nil
 		}
 
+		if foundUser == nil {
+			fmt.Printf("\n User not found %s\n", model.Username)
+			errorMessage := fmt.Sprintf("User not found %s", model.Username)
+			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFoundError", errorMessage)},
+				nil
+		}
+
 		if !foundUser.EmailVerified && !foundUser.PhoneVerified {
 
 			errorMessage := fmt.Sprintf("User is not verified!")
@@ -309,18 +310,20 @@ func LoginAdminHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("passwordMatchError", errorMessage)},
 				nil
 		}
-
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-		foundUserProfile, errProfile := userProfileService.FindByUserId(foundUser.ObjectId)
+		foundUserProfile, errProfile := getUserProfileByID(foundUser.ObjectId)
 		if errProfile != nil {
 			fmt.Printf("\n User profile  %s\n", errProfile.Error())
 			errorMessage := fmt.Sprintf("Find user profile %s", errProfile.Error())
 			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("findUserProfileError", errorMessage)},
 				nil
 		}
+		if foundUserProfile == nil {
+			fmt.Printf("\n Could not find user  %s\n", foundUser.ObjectId)
+			errorMessage := fmt.Sprintf("Could not find user %s", foundUser.ObjectId)
+			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("findUserProfileError", errorMessage)},
+				nil
+		}
+
 		tokenModel := &TokenModel{
 			token:            ProviderAccessToken{},
 			oauthProvider:    nil,

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -19,9 +18,11 @@ import (
 	af "github.com/red-gold/telar-core/config"
 	coreConfig "github.com/red-gold/telar-core/config"
 	tsconfig "github.com/red-gold/telar-core/config"
+	log "github.com/red-gold/telar-core/pkg/log"
 	server "github.com/red-gold/telar-core/server"
 	"github.com/red-gold/telar-core/utils"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
+	"github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
 	settingModels "github.com/red-gold/telar-web/micros/setting/models"
 )
@@ -189,7 +190,8 @@ func createToken(model *TokenModel) (string, error) {
 
 	privateKey, keyErr := jwt.ParseECPrivateKeyFromPEM([]byte(*coreConfig.PrivateKey))
 	if keyErr != nil {
-		log.Fatalf("unable to parse private key: %s", keyErr.Error())
+		log.Error("unable to parse private key: %s", keyErr.Error())
+		return "", fmt.Errorf("unable to parse private key: %s", keyErr.Error())
 	}
 
 	method := jwt.GetSigningMethod(jwt.SigningMethodES256.Name)
@@ -247,6 +249,49 @@ func phoneVerifyCode(code string, appName string) string {
 	return fmt.Sprintf("Verfy code from %s : %s", code, appName)
 }
 
+// functionCall send request to another function/microservice using HMAC validation
+func functionCall(bytesReq []byte, url, method string) ([]byte, error) {
+	prettyURL := utils.GetPrettyURLf(url)
+	bodyReader := bytes.NewBuffer(bytesReq)
+	uri := *coreConfig.AppConfig.InternalGateway + prettyURL
+	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
+	httpReq, httpErr := http.NewRequest(method, uri, bodyReader)
+	if httpErr != nil {
+		return nil, httpErr
+	}
+
+	payloadSecret := *coreConfig.AppConfig.PayloadSecret
+
+	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
+	httpReq.Header.Set("Content-type", "application/json")
+	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
+	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
+
+	c := http.Client{}
+	res, reqErr := c.Do(httpReq)
+	fmt.Printf("\nRes: %v\n", res)
+	if reqErr != nil {
+		return nil, fmt.Errorf("Error while sending reques to %s : %s", uri, reqErr.Error())
+	}
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	resData, readErr := ioutil.ReadAll(res.Body)
+	if resData == nil || readErr != nil {
+		return nil, fmt.Errorf("failed to read response from admin check request.")
+	}
+
+	if res.StatusCode != http.StatusAccepted && res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusNotFound {
+			return nil, NotFoundHTTPStatusError
+		}
+		return nil, fmt.Errorf("failed to call %s api, invalid status: %s", prettyURL, res.Status)
+	}
+
+	return resData, nil
+}
+
 // functionCallByCookie send request to another function/microservice using cookie validation
 func functionCallByHeader(method string, bytesReq []byte, url string, header map[string][]string) ([]byte, error) {
 	prettyURL := utils.GetPrettyURLf(url)
@@ -300,7 +345,7 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 	adminHeaders["role"] = []string{role}
 
 	circleURL := fmt.Sprintf("/circles/following/%s", userId)
-	_, circleErr := functionCall([]byte(""), circleURL)
+	_, circleErr := functionCall([]byte(""), circleURL, http.MethodPost)
 
 	if circleErr != nil {
 		return circleErr
@@ -369,6 +414,65 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 	return nil
 }
 
+// getUserProfileByID Get user profile by user ID
+func getUserProfileByID(userID uuid.UUID) (*models.UserProfileModel, error) {
+	profileURL := fmt.Sprintf("/profile/dto/id/%s", userID.String())
+	foundProfileData, err := functionCall([]byte(""), profileURL, http.MethodGet)
+	if err != nil {
+		if err == NotFoundHTTPStatusError {
+			return nil, nil
+		}
+		log.Error("functionCall (%s) -  %s", profileURL, err.Error())
+		return nil, fmt.Errorf("getUserProfileByID/functionCall")
+	}
+	var foundProfile models.UserProfileModel
+	err = json.Unmarshal(foundProfileData, &foundProfile)
+	if err != nil {
+		log.Error("Unmarshal foundProfile -  %s", err.Error())
+		return nil, fmt.Errorf("getUserProfileByID/unmarshal")
+	}
+	return &foundProfile, nil
+}
+
+// saveUserProfile Save user profile
+func saveUserProfile(model *models.UserProfileModel) error {
+	profileURL := "/profile/dto"
+	data, err := json.Marshal(model)
+	if err != nil {
+		log.Error("marshal models.UserProfileModel %s", err.Error())
+		return fmt.Errorf("saveProfile/marshalUserProfileModel")
+	}
+	_, err = functionCall(data, profileURL, http.MethodPost)
+	if err != nil {
+		log.Error("functionCall (%s) -  %s", profileURL, err.Error())
+		return fmt.Errorf("saveUserProfile/functionCall")
+	}
+	return nil
+}
+
+// updateUserProfile Update user profile
+func updateUserProfile(model *models.ProfileUpdateModel, userId uuid.UUID, email, avatar, displayName, role string) error {
+	profileURL := "/profile"
+	data, err := json.Marshal(model)
+	if err != nil {
+		log.Error("marshal models.UserProfileModel %s", err.Error())
+		return fmt.Errorf("saveProfile/marshalUserProfileModel")
+	}
+	headers := make(map[string][]string)
+	headers["uid"] = []string{userId.String()}
+	headers["email"] = []string{email}
+	headers["avatar"] = []string{avatar}
+	headers["displayName"] = []string{displayName}
+	headers["role"] = []string{role}
+	_, err = functionCallByHeader(http.MethodPut, data, profileURL, headers)
+	if err != nil {
+		log.Error("functionCallByHeader (%s) -  %s", profileURL, err.Error())
+		return fmt.Errorf("updateUserProfile/functionCallByHeader")
+	}
+	return nil
+}
+
+// generateRandomNumber
 func generateRandomNumber(min int, max int) int {
 	rand.Seed(time.Now().UnixNano())
 	return (rand.Intn(max-min+1) + min)

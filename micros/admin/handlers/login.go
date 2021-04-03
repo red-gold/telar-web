@@ -141,7 +141,7 @@ func LoginAdminHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 // checkSetupEnabled check whether setup is done already
 func checkSetupEnabled() (bool, error) {
 	url := "/auth/check/admin"
-	resData, functionCallErr := functionCall([]byte(""), url)
+	resData, functionCallErr := functionCall([]byte(""), url, http.MethodPost)
 	if functionCallErr != nil {
 		return false, functionCallErr
 	}
@@ -158,7 +158,7 @@ func checkSetupEnabled() (bool, error) {
 // signupAdmin signup admin
 func signupAdmin() (string, error) {
 	url := "/auth/signup/admin"
-	resData, functionCallErr := functionCall([]byte(""), url)
+	resData, functionCallErr := functionCall([]byte(""), url, http.MethodPost)
 	if functionCallErr != nil {
 		return "", functionCallErr
 	}
@@ -174,7 +174,7 @@ func signupAdmin() (string, error) {
 func loginAdmin(model *models.LoginModel) (string, error) {
 	url := "/auth/login/admin"
 	bytesOut, _ := json.Marshal(model)
-	resData, functionCallErr := functionCall(bytesOut, url)
+	resData, functionCallErr := functionCall(bytesOut, url, http.MethodPost)
 	if functionCallErr != nil {
 		return "", functionCallErr
 	}

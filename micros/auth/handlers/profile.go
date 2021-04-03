@@ -11,7 +11,6 @@ import (
 	cf "github.com/red-gold/telar-web/micros/auth/config"
 	models "github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
-	service "github.com/red-gold/telar-web/micros/auth/services"
 )
 
 // UpdateProfileHandle a function invocation
@@ -19,11 +18,6 @@ func UpdateProfileHandle(db interface{}) func(http.ResponseWriter, *http.Request
 
 	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
 		authConfig := &cf.AuthConfig
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
 
 		model := models.ProfileUpdateModel{}
 		unmarshalErr := json.Unmarshal(req.Body, &model)
@@ -34,29 +28,8 @@ func UpdateProfileHandle(db interface{}) func(http.ResponseWriter, *http.Request
 				unmarshalErr
 
 		}
-		fmt.Printf("Update profile userId: %s username: %s", req.UserID, req.Username)
-		foundUserProfile, profileErr := userProfileService.FindByUserId(req.UserID)
-		if profileErr != nil {
-			errorMessage := fmt.Sprintf("Find profile Error %s",
-				profileErr.Error())
 
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("findProfileError", errorMessage)},
-				profileErr
-		}
-		foundUserProfile.FullName = model.FullName
-		foundUserProfile.Avatar = model.Avatar
-		foundUserProfile.Banner = model.Banner
-		foundUserProfile.TagLine = model.TagLine
-		foundUserProfile.Birthday = model.Birthday
-		foundUserProfile.WebUrl = model.WebUrl
-		foundUserProfile.CompanyName = model.CompanyName
-		foundUserProfile.FacebookId = model.FacebookId
-		foundUserProfile.InstagramId = model.InstagramId
-		foundUserProfile.TwitterId = model.TwitterId
-		foundUserProfile.AccessUserList = model.AccessUserList
-		foundUserProfile.Permission = model.Permission
-
-		err := userProfileService.UpdateUserProfileById(req.UserID, foundUserProfile)
+		err := updateUserProfile(&model, req.UserID, req.Username, req.Avatar, req.DisplayName, req.SystemRole)
 		if err != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, err
 		}

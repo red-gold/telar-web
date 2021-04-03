@@ -1,15 +1,11 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"github.com/alexellis/hmac"
 	uuid "github.com/gofrs/uuid"
 	handler "github.com/openfaas-incubator/go-function-sdk"
 	coreConfig "github.com/red-gold/telar-core/config"
@@ -177,14 +173,15 @@ func SignupTokenHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 			errorMessage := fmt.Sprintf("Error while finding user by user name : %s",
 				findError.Error())
 			fmt.Println(errorMessage)
+			return handler.Response{StatusCode: http.StatusInternalServerError}, nil
 
 		}
-
-		if userAuth.ObjectId != uuid.Nil {
-			errorMessage := fmt.Sprintf(`{"error": "Error user already exist %s"}`, model.User.Email)
-			return handler.Response{StatusCode: http.StatusBadGateway, Body: []byte(errorMessage)},
-				findError
-
+		if userAuth != nil {
+			utils.MarshalError("userAlreadyExist", "User already exist - "+model.User.Email)
+			return handler.Response{
+				Body:       []byte("{error: 'Internal server error creating JWT'}"),
+				StatusCode: http.StatusInternalServerError,
+			}, nil
 		}
 
 		// Create signup token
@@ -257,11 +254,6 @@ func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
 
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
 		userUUID, userUuidErr := uuid.NewV4()
 		if userUuidErr != nil {
 			return handler.Response{StatusCode: http.StatusBadRequest,
@@ -295,7 +287,7 @@ func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 				nil
 		}
 
-		newUserProfile := &dto.UserProfile{
+		newUserProfile := &models.UserProfileModel{
 			ObjectId:    userUUID,
 			FullName:    fullName,
 			CreatedDate: createdDate,
@@ -305,7 +297,7 @@ func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 			Banner:      fmt.Sprintf("https://picsum.photos/id/%d/900/300/?blur", generateRandomNumber(1, 1000)),
 			Permission:  constants.Public,
 		}
-		userProfileErr := userProfileService.SaveUserProfile(newUserProfile)
+		userProfileErr := saveUserProfile(newUserProfile)
 		if userProfileErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError,
 					Body: utils.MarshalError("canNotSaveUserProfile",
@@ -349,44 +341,4 @@ func AdminSignupHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 			StatusCode: http.StatusOK,
 		}, nil
 	}
-}
-
-// functionCall send request to another function/microservice using HMAC validation
-func functionCall(bytesReq []byte, url string) ([]byte, error) {
-	prettyURL := utils.GetPrettyURLf(url)
-	bodyReader := bytes.NewBuffer(bytesReq)
-	uri := *coreConfig.AppConfig.InternalGateway + prettyURL
-	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
-	httpReq, httpErr := http.NewRequest(http.MethodPost, uri, bodyReader)
-	if httpErr != nil {
-		return nil, httpErr
-	}
-
-	payloadSecret := *coreConfig.AppConfig.PayloadSecret
-
-	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
-	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
-
-	c := http.Client{}
-	res, reqErr := c.Do(httpReq)
-	fmt.Printf("\nRes: %v\n", res)
-	if reqErr != nil {
-		return nil, fmt.Errorf("Error while sending admin check request!: %s", reqErr.Error())
-	}
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	resData, readErr := ioutil.ReadAll(res.Body)
-	if resData == nil || readErr != nil {
-		return nil, fmt.Errorf("failed to read response from admin check request.")
-	}
-
-	if res.StatusCode != http.StatusAccepted && res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to call %s api, invalid status: %s", prettyURL, res.Status)
-	}
-
-	return resData, nil
 }

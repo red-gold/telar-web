@@ -18,6 +18,7 @@ import (
 	"github.com/red-gold/telar-web/constants"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
+	"github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
 	service "github.com/red-gold/telar-web/micros/auth/services"
 )
@@ -41,11 +42,6 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 		return serviceErr
 	}
 
-	userProfileService, serviceErr := service.NewUserProfileService(db)
-	if serviceErr != nil {
-		return serviceErr
-	}
-
 	fmt.Printf("[INFO]: Oauth check signup for user %s", model.profile.Email)
 
 	// Check user exist
@@ -58,7 +54,7 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 	}
 	fmt.Printf("[INFO]: Oauth check signup - user auth object %v", userAuth)
 
-	if userAuth.ObjectId == uuid.Nil {
+	if userAuth == nil {
 		// Create signup token
 		newUserId, uuidErr := uuid.NewV4()
 		if uuidErr != nil {
@@ -84,7 +80,7 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 			return userAuthErr
 		}
 		model.profile.ID = newUserId.String()
-		newUserProfile := &dto.UserProfile{
+		newUserProfile := &models.UserProfileModel{
 			ObjectId:    newUserId,
 			FullName:    model.profile.Name,
 			CreatedDate: createdDate,
@@ -94,7 +90,7 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 			Banner:      fmt.Sprintf("https://picsum.photos/id/%d/900/300/?blur", generateRandomNumber(1, 1000)),
 			Permission:  constants.Public,
 		}
-		userProfileErr := userProfileService.SaveUserProfile(newUserProfile)
+		userProfileErr := saveUserProfile(newUserProfile)
 		if userProfileErr != nil {
 
 			return fmt.Errorf("Cannot save user profile! error: %s", userProfileErr.Error())
@@ -113,15 +109,15 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 		}
 	} else {
 
-		fmt.Printf("\n[INFO]: Check signup user exist, preparing user profile.\n")
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return serviceErr
-		}
-		foundUserProfile, errProfile := userProfileService.FindByUserId(userAuth.ObjectId)
+		foundUserProfile, errProfile := getUserProfileByID(userAuth.ObjectId)
 		if errProfile != nil {
 			fmt.Printf("\n User profile  %s\n", errProfile.Error())
 			return errProfile
+		}
+		if foundUserProfile == nil {
+			fmt.Printf("\n Could not find user  %s\n", foundUserProfile.ObjectId)
+			return fmt.Errorf("Could not find user %s", foundUserProfile.ObjectId)
+
 		}
 
 		model.profile.ID = userAuth.ObjectId.String()

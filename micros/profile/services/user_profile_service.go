@@ -9,7 +9,7 @@ import (
 	"github.com/red-gold/telar-core/data/mongodb"
 	mongoRepo "github.com/red-gold/telar-core/data/mongodb"
 	"github.com/red-gold/telar-core/utils"
-	dto "github.com/red-gold/telar-web/micros/auth/dto"
+	dto "github.com/red-gold/telar-web/micros/profile/dto"
 )
 
 // UserProfileService handlers with injected dependencies
@@ -60,6 +60,9 @@ func (s UserProfileServiceImpl) FindOneUserProfile(filter interface{}) (*dto.Use
 
 	result := <-s.UserProfileRepo.FindOne(userProfileCollectionName, filter)
 	if result.Error() != nil {
+		if result.Error() == coreData.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, result.Error()
 	}
 
@@ -93,7 +96,7 @@ func (s UserProfileServiceImpl) FindUserProfileList(filter interface{}, limit in
 }
 
 // QueryPost get all user profile by query
-func (s UserProfileServiceImpl) QueryUserProfile(search string, sortBy string, page int64) ([]dto.UserProfile, error) {
+func (s UserProfileServiceImpl) QueryUserProfile(search string, sortBy string, page int64, notIncludeUserIDList []uuid.UUID) ([]dto.UserProfile, error) {
 	sortMap := make(map[string]int)
 	sortMap[sortBy] = -1
 	skip := numberOfItems * (page - 1)
@@ -101,6 +104,11 @@ func (s UserProfileServiceImpl) QueryUserProfile(search string, sortBy string, p
 	filter := make(map[string]interface{})
 	if search != "" {
 		filter["$text"] = coreData.SearchOperator{Search: search}
+	}
+	if notIncludeUserIDList != nil && len(notIncludeUserIDList) > 0 {
+		nin := make(map[string]interface{})
+		nin["$nin"] = notIncludeUserIDList
+		filter["objectId"] = nin
 	}
 	fmt.Println(filter)
 	result, err := s.FindUserProfileList(filter, limit, skip, sortMap)
@@ -119,7 +127,7 @@ func (s UserProfileServiceImpl) FindByUsername(username string) (*dto.UserProfil
 	return s.FindOneUserProfile(filter)
 }
 
-// FindByUsername find user profile by userId
+// FindByUserId find user profile by userId
 func (s UserProfileServiceImpl) FindByUserId(userId uuid.UUID) (*dto.UserProfile, error) {
 
 	filter := struct {
@@ -138,6 +146,27 @@ func (s UserProfileServiceImpl) UpdateUserProfile(filter interface{}, data inter
 		return result.Error
 	}
 	return nil
+}
+
+// UpdateLastSeen update user profile information
+func (s UserProfileServiceImpl) UpdateLastSeenNow(userId uuid.UUID) error {
+	data := struct {
+		LastSeen int64 `json:"lastSeen" bson:"lastSeen"`
+	}{
+		LastSeen: utils.UTCNowUnix(),
+	}
+
+	filter := struct {
+		ObjectId uuid.UUID `json:"objectId" bson:"objectId"`
+	}{
+		ObjectId: userId,
+	}
+
+	updateOperator := coreData.UpdateOperator{
+		Set: data,
+	}
+
+	return s.UpdateUserProfile(filter, updateOperator)
 }
 
 // UpdateUserProfileById update user profile information by user id

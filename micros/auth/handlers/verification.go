@@ -116,11 +116,6 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
 		}
 
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
 		userUUID, userUuidErr := uuid.FromString(userId)
 		if userUuidErr != nil {
 			return handler.Response{StatusCode: http.StatusBadRequest,
@@ -172,7 +167,7 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 			return codeVerifyResponsePage(signupVerifyData)
 		}
 
-		newUserProfile := &dto.UserProfile{
+		newUserProfile := &models.UserProfileModel{
 			ObjectId:    userUUID,
 			FullName:    fullName,
 			CreatedDate: createdDate,
@@ -182,7 +177,7 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 			Banner:      fmt.Sprintf("https://picsum.photos/id/%d/900/300/?blur", generateRandomNumber(1, 1000)),
 			Permission:  constants.Public,
 		}
-		userProfileErr := userProfileService.SaveUserProfile(newUserProfile)
+		userProfileErr := saveUserProfile(newUserProfile)
 		if userProfileErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError,
 					Body: utils.MarshalError("canNotSaveUserProfile",
@@ -221,9 +216,12 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 
 		fmt.Printf("\nSession is created: %s \n", session)
 		webURL := authConfig.ExternalRedirectDomain
-		http.Redirect(w, r, webURL, http.StatusTemporaryRedirect)
 		return handler.Response{
-			StatusCode: http.StatusTemporaryRedirect,
+			Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + webURL + `");</script></html>`),
+			StatusCode: http.StatusOK,
+			Header: map[string][]string{
+				"Content-Type": {" text/html; charset=utf-8"},
+			},
 		}, nil
 	}
 }

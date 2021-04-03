@@ -17,13 +17,13 @@ import (
 )
 
 // functionCall send request to another function/microservice using HMAC validation
-func functionCall(bytesReq []byte, url string) ([]byte, error) {
+func functionCall(bytesReq []byte, url, method string) ([]byte, error) {
 	prettyURL := utils.GetPrettyURLf(url)
 	bodyReader := bytes.NewBuffer(bytesReq)
 	uri := fmt.Sprintf("%s%s", *coreConfig.AppConfig.InternalGateway, prettyURL)
 	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
 
-	httpReq, httpErr := http.NewRequest(http.MethodPost, uri, bodyReader)
+	httpReq, httpErr := http.NewRequest(method, uri, bodyReader)
 	if httpErr != nil {
 		return nil, httpErr
 	}

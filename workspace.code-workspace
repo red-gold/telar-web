@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "micros/auth"
+		},
+		{
+			"path": "micros/profile"
+		},
+		{
+			"path": "micros/admin"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

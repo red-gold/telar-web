@@ -44,9 +44,15 @@ func ResetPasswordPageHandler(db interface{}) func(http.ResponseWriter, *http.Re
 			return handler.Response{StatusCode: http.StatusInternalServerError}, findErr
 		}
 
-		_, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
+		foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
 		if userAuthErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, userAuthErr
+		}
+		if foundUserAuth == nil {
+			return handler.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
+			}, nil
 		}
 		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
@@ -143,6 +149,12 @@ func ForgetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.R
 			errorMessage := fmt.Sprintf("User not found: %s",
 				userAuthErr.Error())
 			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFound", errorMessage)},
+				nil
+		}
+		if foundUserAuth == nil {
+			fmt.Printf("\n User not found %s\n", userEmail)
+			errorMessage := fmt.Sprintf("User not found %s", userEmail)
+			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFoundError", errorMessage)},
 				nil
 		}
 
@@ -268,6 +280,12 @@ func ResetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.Re
 		foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
 		if userAuthErr != nil {
 			return handler.Response{StatusCode: http.StatusInternalServerError}, userAuthErr
+		}
+		if foundUserAuth == nil {
+			return handler.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
+			}, nil
 		}
 
 		hashPassword, hashErr := utils.Hash(newPassword)

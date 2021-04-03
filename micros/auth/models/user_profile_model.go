@@ -1,11 +1,11 @@
-package dto
+package models
 
 import (
 	uuid "github.com/gofrs/uuid"
 	"github.com/red-gold/telar-web/constants"
 )
 
-type UserProfile struct {
+type UserProfileModel struct {
 	ObjectId       uuid.UUID                     `json:"objectId" bson:"objectId"`
 	FullName       string                        `json:"fullName" bson:"fullName"`
 	Avatar         string                        `json:"avatar" bson:"avatar"`

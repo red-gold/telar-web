@@ -60,6 +60,9 @@ func (s UserAuthServiceImpl) FindOneUserAuth(filter interface{}) (*dto.UserAuth,
 
 	result := <-s.UserAuthRepo.FindOne(userAuthCollectionName, filter)
 	if result.Error() != nil {
+		if result.Error() == repo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, result.Error()
 	}
 

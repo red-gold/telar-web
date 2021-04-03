@@ -7,11 +7,12 @@ import (
 
 	coreServer "github.com/red-gold/telar-core/server"
 	micros "github.com/red-gold/telar-web/micros"
+	"github.com/red-gold/telar-web/micros/actions/config"
 	"github.com/red-gold/telar-web/micros/actions/handlers"
 )
 
 func init() {
-
+	config.InitConfig()
 	micros.InitConfig()
 }
 
@@ -44,7 +45,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		server.PUT("/room/access-key", handlers.SetAccessKeyHandle(db), coreServer.RouteProtectionCookie)
 		server.DELETE("/room/:roomId", handlers.DeleteActionRoomHandle(db), coreServer.RouteProtectionHMAC)
 		server.GET("/room/access-key", handlers.GetAccessKeyHandle(db), coreServer.RouteProtectionCookie)
-		server.GET("/room/verify/:accessKey", handlers.VerifyAccessKeyHandle(db), coreServer.RouteProtectionCookie)
+		server.POST("/room/verify", handlers.VerifyAccessKeyHandle(db), coreServer.RouteProtectionCookie)
 	}
 	server.ServeHTTP(w, r)
 }
