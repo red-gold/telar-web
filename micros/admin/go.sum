@@ -50,6 +50,8 @@ github.com/red-gold/telar-core v0.1.8/go.mod h1:CQxfrf3OabHMPKjts/D1DHkvuGYrZmR/
 github.com/red-gold/telar-web v0.1.19/go.mod h1:3bURvA+IpSrfJ6PWAnxqZDjEt6UI8DsQDa2TfiCf/WQ=
 github.com/red-gold/telar-web v0.1.47 h1:o7/umghS71oHL1ASurGUKTx+fdS1p+HsokDdmpBaX4k=
 github.com/red-gold/telar-web v0.1.47/go.mod h1:sdOGkAo1zw2BFEqSWhcVoT/dQaeZgzMqbIRVr6GivVI=
+github.com/red-gold/telar-web v0.1.49 h1:YmQndNBApOH6IYnoRYvKB1/qk7D0aTRM9dLYaWNUWj4=
+github.com/red-gold/telar-web v0.1.49/go.mod h1:JlY3LI2HshOI6ud2lPnos/hOvGNsZaTFsxvRPNg4c4k=
 github.com/red-gold/telar-web/micros/auth v0.0.0-20210228035214-84737143b022 h1:ubUHo8H9tRMF1e8rI2F+sj3dSfS5Nc+zOtqZdwSZIYI=
 github.com/red-gold/telar-web/micros/auth v0.0.0-20210228035214-84737143b022/go.mod h1:N8FZacGP28CdGrrnXfqj1rQQN7RpCWcj65KwMftuExM=
 github.com/red-gold/telar-web/micros/setting v0.0.0-20210228035214-84737143b022 h1:26s6Z8Jzfio3z93nnhRYtlZyJXgwBBZrPaDgCmgdcno=
