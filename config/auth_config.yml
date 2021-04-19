@@ -1,6 +1,7 @@
 environment:
-  base_route: /auth
-  external_redirect_domain: http://social.example.com:3000
+  base_route: ""
+  external_redirect_domain: "https://social.telar.dev"
+  auth_web_uri: "https://auth.telar.dev"
   client_id: 7a9cbbf3e0bce602784f
   client_secret: ""
   exec_timeout: 20s

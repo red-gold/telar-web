@@ -95,7 +95,7 @@ func buildGitHubURL(config *cf.Configuration, string, scope string) *url.URL {
 	q.Set("state", fmt.Sprintf("%d", time.Now().Unix()))
 	q.Set("client_id", config.ClientID)
 
-	redirectURI := combineURL(*coreConfig.AppConfig.Gateway, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
+	redirectURI := combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
 
 	q.Set("redirect_uri", redirectURI)
 
@@ -113,7 +113,7 @@ func buildGitLabURL(config *cf.Configuration) *url.URL {
 	q.Set("response_type", "code")
 	q.Set("state", fmt.Sprintf("%d", time.Now().Unix()))
 
-	redirectURI := combineURL(*coreConfig.AppConfig.Gateway, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
+	redirectURI := combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
 
 	q.Set("redirect_uri", redirectURI)
 

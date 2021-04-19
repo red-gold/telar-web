@@ -86,6 +86,12 @@ func loadAllConfig() {
 		log.Printf("[INFO]: ExternalRedirectDomain information loaded from env.")
 	}
 
+	authWebURI, ok := os.LookupEnv("auth_web_uri")
+	if ok {
+		AuthConfig.AuthWebURI = authWebURI
+		log.Printf("[INFO]: AuthWebURI information loaded from env [%s] ", authWebURI)
+	}
+
 	scope, ok := os.LookupEnv("oauth_scope")
 	if ok {
 		AuthConfig.Scope = scope

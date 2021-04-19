@@ -1,3 +1,0 @@
-replace github.com/red-gold/telar-web/micros/notifications/handlers => ./function/handlers
-replace github.com/red-gold/telar-web/micros/notifications/config => ./function/config
-replace github.com/red-gold/telar-web/micros/notifications => ./function

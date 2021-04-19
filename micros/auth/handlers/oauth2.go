@@ -12,7 +12,6 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	handler "github.com/openfaas-incubator/go-function-sdk"
-	coreConfig "github.com/red-gold/telar-core/config"
 	server "github.com/red-gold/telar-core/server"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
@@ -226,7 +225,7 @@ func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, 
 			oauthProvider = provider.NewGitLabProvider(c, config.OAuthProviderBaseURL, apiURL)
 
 			redirectAfterAutURL := reqQuery.Get("r")
-			redirectURI, _ = url.Parse(combineURL(*coreConfig.AppConfig.Gateway, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized")))
+			redirectURI, _ = url.Parse(combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized")))
 
 			redirectURIQuery := redirectURI.Query()
 			redirectURIQuery.Set("r", redirectAfterAutURL)

@@ -198,7 +198,7 @@ func ForgetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.R
 		}{
 			Name:    foundUserAuth.Username,
 			AppName: *appConfig.AppName,
-			Link:    fmt.Sprintf("%s%s/password/reset/%s", *appConfig.Gateway, prettyURL, verifyId),
+			Link:    fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, verifyId),
 			Email:   foundUserAuth.Username,
 		})
 

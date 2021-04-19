@@ -13,6 +13,7 @@ type (
 		AdminUsername          string
 		AdminPassword          string
 		ExternalRedirectDomain string
+		AuthWebURI             string
 		Scope                  string
 		CookieRootDomain       string
 		CookieExpiresIn        time.Duration

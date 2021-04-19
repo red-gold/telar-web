@@ -1,4 +1,0 @@
-replace github.com/red-gold/telar-web/micros/actions/handlers => ./function/handlers
-replace github.com/red-gold/telar-web/micros/actions/config => ./function/config
-replace github.com/red-gold/telar-web/micros/actions => ./function
-replace github.com/red-gold/telar-core => ./function/telar-core
