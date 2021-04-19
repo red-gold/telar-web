@@ -10,6 +10,7 @@ type UserProfileService interface {
 	FindOneUserProfile(filter interface{}) (*dto.UserProfile, error)
 	FindUserProfileList(filter interface{}, limit int64, skip int64, sort map[string]int) ([]dto.UserProfile, error)
 	QueryUserProfile(search string, sortBy string, page int64, notIncludeUserIDList []uuid.UUID) ([]dto.UserProfile, error)
+	FindProfileByUserIds(userIds []uuid.UUID) ([]dto.UserProfile, error)
 	FindByUserId(userId uuid.UUID) (*dto.UserProfile, error)
 	UpdateUserProfile(filter interface{}, data interface{}) error
 	UpdateLastSeenNow(userId uuid.UUID) error

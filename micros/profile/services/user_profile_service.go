@@ -116,6 +116,22 @@ func (s UserProfileServiceImpl) QueryUserProfile(search string, sortBy string, p
 	return result, err
 }
 
+// FindProfileByUserIds Find profile by user IDs
+func (s UserProfileServiceImpl) FindProfileByUserIds(userIds []uuid.UUID) ([]dto.UserProfile, error) {
+	sortMap := make(map[string]int)
+	sortMap["createdDate"] = -1
+
+	include := make(map[string]interface{})
+	include["$in"] = userIds
+
+	filter := make(map[string]interface{})
+	filter["objectId"] = include
+
+	result, err := s.FindUserProfileList(filter, 0, 0, sortMap)
+
+	return result, err
+}
+
 // FindByUsername find user profile by name
 func (s UserProfileServiceImpl) FindByUsername(username string) (*dto.UserProfile, error) {
 

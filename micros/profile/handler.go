@@ -45,12 +45,14 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		server.GETWR("/", handlers.QueryUserProfileHandle(db), coreServer.RouteProtectionCookie)
 		server.GET("/id/:userId", handlers.ReadProfileHandle(db), coreServer.RouteProtectionCookie)
 		server.POST("/index", handlers.InitProfileIndexHandle(db), coreServer.RouteProtectionHMAC)
-		server.PUT("/last-seen", handlers.UpdateLastSeen(db), coreServer.RouteProtectionCookie)
+		server.PUT("/last-seen", handlers.UpdateLastSeen(db), coreServer.RouteProtectionHMAC)
 
 		// Invoke between functions and protected by HMAC
 		server.PUTWR("/", handlers.UpdateProfileHandle(db), coreServer.RouteProtectionHMAC)
 		server.GET("/dto/id/:userId", handlers.ReadDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
 		server.POST("/dto", handlers.CreateDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
+		server.POST("/dispatch", handlers.DispatchProfilesHandle(db), coreServer.RouteProtectionHMAC)
+		server.POST("/dto/ids", handlers.GetProfileByIds(db), coreServer.RouteProtectionHMAC)
 	}
 	server.ServeHTTP(w, r)
 }
