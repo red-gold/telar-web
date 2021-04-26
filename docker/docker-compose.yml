@@ -1,5 +1,18 @@
 version: "3.8"
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    env_file:
+      - ./.env
+    volumes:
+      # seeding scripts
+      - ./mongo-entrypoint:/docker-entrypoint-initdb.d
+      # named volumes
+      - ./mongodb:/data/db
+      - ./mongoconfig:/data/configdb
   proxy:
     image: traefik:v2.4.2
     command:

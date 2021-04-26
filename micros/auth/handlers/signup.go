@@ -177,9 +177,9 @@ func SignupTokenHandle(db interface{}) func(http.ResponseWriter, *http.Request, 
 
 		}
 		if userAuth != nil {
-			utils.MarshalError("userAlreadyExist", "User already exist - "+model.User.Email)
+			err := utils.MarshalError("userAlreadyExist", "User already exist - "+model.User.Email)
 			return handler.Response{
-				Body:       []byte("{error: 'Internal server error creating JWT'}"),
+				Body:       err,
 				StatusCode: http.StatusInternalServerError,
 			}, nil
 		}
