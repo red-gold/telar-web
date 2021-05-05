@@ -130,7 +130,6 @@ functions:
     handler: ./micros/storage
     image: qolzam/storage:v0.1.12
     fprocess: ""
-    environment: {}
     secrets:
     - secrets
     environment_file:

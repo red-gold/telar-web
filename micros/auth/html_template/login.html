@@ -10,9 +10,10 @@
 
 
     <style>
-         body {
+        body {
             background-color: #fafafa
         }
+
         .center-col {
             display: flex;
             flex-direction: row;
@@ -183,6 +184,11 @@
             margin-bottom: 15px;
         }
 
+        .preloader-wrapper.small {
+            width: 25px;
+            height: 25px;
+        }
+
         /* down sm */
         @media (max-width: 959.95px) {
             .centerContainer {
@@ -239,7 +245,11 @@
                 <div class="centerContainer">
                     <div class="contain pageItem">
 
-                        <a href="{{.GithubLink}}" class="waves-effect waves-light  lighten-4 black-text btn-flat" style="margin-top: 25px;"><img src="https://www.iconninja.com/files/1003/487/822/black-github-icon.png" style="max-width: 33px;" alt=""> <span style="vertical-align: text-bottom;"> Login with Github</span></a>
+                        <a href="{{.GithubLink}}" class="waves-effect waves-light  lighten-4 black-text btn-flat"
+                            style="margin-top: 25px;"><img
+                                src="https://www.iconninja.com/files/1003/487/822/black-github-icon.png"
+                                style="max-width: 33px;" alt=""> <span style="vertical-align: text-bottom;"> Login with
+                                Github</span></a>
                         <hr style="width: 90%;">
 
                         <form class="col s12" id="main" action="{{.ActionForm}}" method="post" novalidate>
@@ -255,25 +265,29 @@
                                     <label for="password">Password</label>
                                     <span class="helper-text messages"></span>
                                 </div>
-                                <button id="submit-btn"  class="btn waves-effect waves-light btn-small submit-button orange accent-3"
+                                <button id="submit-btn"
+                                    class="btn waves-effect waves-light btn-small submit-button orange accent-3"
                                     type="submit" name="action">Login
                                 </button>
-                                <div id="progress-btn" style="position: relative;display:none;">
-                                        <div class="preloader-wrapper small active" style="z-index: 2;position: absolute;top: 50%;left: 50%;margin-top: -12px;margin-left: -12px;">
-                                            <div class="spinner-layer spinner-green-only">
-                                              <div class="circle-clipper left">
+                                <div id="progress-btn" style="position: relative;display: none;">
+                                    <div class="preloader-wrapper small active"
+                                        style="z-index: 2;position: absolute;top: 50%;left: 50%;margin-top: -12px;margin-left: -12px;">
+                                        <div class="spinner-layer spinner-green-only">
+                                            <div class="circle-clipper left">
                                                 <div class="circle"></div>
-                                              </div><div class="gap-patch">
-                                                <div class="circle"></div>
-                                              </div><div class="circle-clipper right">
-                                                <div class="circle"></div>
-                                              </div>
                                             </div>
-                                          </div>
-                                          <button class="btn waves-effect waves-light disabled"
-                                          type="submit" name="action">Login
-                                      </button>
+                                            <div class="gap-patch">
+                                                <div class="circle"></div>
+                                            </div>
+                                            <div class="circle-clipper right">
+                                                <div class="circle"></div>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <button class="btn waves-effect waves-light disabled submit-button" type="submit"
+                                        name="action">Login
+                                    </button>
+                                </div>
                             </div>
                         </form>
                         <blockquote id="error_message" style="display: none;">
@@ -323,7 +337,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
     <script>
         (function () {
-            var errMessage =  "{{.Message}}"
+            var errMessage = "{{.Message}}"
             if (errMessage != "") {
                 document.getElementById('error_message').style.display = "block"
             }
