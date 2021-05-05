@@ -1,3 +1,4 @@
+replace github.com/red-gold/telar-core => github.com/red-gold/telar-core v0.1.10
 replace github.com/red-gold/telar-web/micros/__micro_name/handlers => ./function/handlers
 replace github.com/red-gold/telar-web/micros/__micro_name/config => ./function/config
 replace github.com/red-gold/telar-web/micros/__micro_name => ./function

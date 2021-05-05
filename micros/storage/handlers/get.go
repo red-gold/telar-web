@@ -46,7 +46,7 @@ func GetFileHandle() func(http.ResponseWriter, *http.Request, server.Request) (h
 		}
 
 		fmt.Println("File Upload Endpoint Hit")
-		// params from /storage/:uid/:dir/:name
+
 		dirName := req.GetParamByName("dir")
 		if dirName == "" {
 			errorMessage := fmt.Sprintf("Directory name is required!")
@@ -54,7 +54,6 @@ func GetFileHandle() func(http.ResponseWriter, *http.Request, server.Request) (h
 		}
 		fmt.Printf("\n Directory name: %s", dirName)
 
-		// params from /storage/:dir
 		fileName := req.GetParamByName("name")
 		if fileName == "" {
 			errorMessage := fmt.Sprintf("File name is required!")

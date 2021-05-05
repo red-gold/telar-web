@@ -2,7 +2,7 @@ functions:
   actions:
     lang: golang-middleware
     handler: ./micros/actions
-    image: qolzam/actions:v0.1.10
+    image: qolzam/actions:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -23,7 +23,7 @@ functions:
   admin:
     lang: golang-middleware
     handler: ./micros/admin
-    image: qolzam/admin:v0.1.10
+    image: qolzam/admin:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -44,7 +44,7 @@ functions:
   auth:
     lang: golang-middleware
     handler: ./micros/auth
-    image: qolzam/auth:v0.1.10
+    image: qolzam/auth:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -65,7 +65,7 @@ functions:
   notifications:
     lang: golang-middleware
     handler: ./micros/notifications
-    image: qolzam/notifications:v0.1.10
+    image: qolzam/notifications:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -86,7 +86,7 @@ functions:
   profile:
     lang: golang-middleware
     handler: ./micros/profile
-    image: qolzam/profile:v0.1.10
+    image: qolzam/profile:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -107,7 +107,7 @@ functions:
   setting:
     lang: golang-middleware
     handler: ./micros/setting
-    image: qolzam/setting:v0.1.10
+    image: qolzam/setting:v0.1.12
     fprocess: ""
     environment: {}
     secrets:
@@ -128,7 +128,7 @@ functions:
   storage:
     lang: golang-middleware
     handler: ./micros/storage
-    image: qolzam/storage:v0.1.10
+    image: qolzam/storage:v0.1.12
     fprocess: ""
     environment: {}
     secrets:

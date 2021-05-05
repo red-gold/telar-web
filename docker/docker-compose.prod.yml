@@ -1,0 +1,200 @@
+version: "3.8"
+services:
+  proxy:
+    image: traefik:v2.4.2
+    command:
+      # - "--log.level=DEBUG"
+      - "--api=true"
+      - "--api.dashboard=true"
+      - "--api.insecure=true" # Don't do that in production
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+      # add pilot token service
+      # - "--pilot.token=3d1bd97f-cb9d-4cde-8112-77ce2f5abc92"
+      # install plugin rewrite body
+      # - "--experimental.plugins.plugin-rewrite.modulename=github.com/traefik/plugin-rewritebody"
+      # - "--experimental.plugins.plugin-rewrite.version=v0.3.1"
+    labels: {}
+      # Create basics middlewares
+      # - "traefik.http.middlewares.my-auth.basicauth.users=test:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
+      # - "traefik.http.middlewares.my-compress.compress=true"
+      # - "traefik.http.middlewares.my-header.headers.customresponseheaders.X-Custom-Response-Header=cinema"
+      # Create middlewares for plugins
+      # - "traefik.http.middlewares.my-rewrite.plugin.plugin-rewrite.lastModified=true"
+      # - "traefik.http.middlewares.my-rewrite.plugin.plugin-rewrite.rewrites[0].regex=ID"
+      # - "traefik.http.middlewares.my-rewrite.plugin.plugin-rewrite.rewrites[0].replacement=MY-ID"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+
+  actions:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: actions
+    # image:qolzam/actions:v2.1.0
+    volumes:
+      - ../micros/actions:/usr/local/go/src/github.com/red-gold/telar-web/micros/actions
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.actions.rule=PathPrefix(`/actions`)"
+      - "traefik.http.services.actions.loadbalancer.server.port=8080"
+      - "traefik.http.routers.actions.entrypoints=web"
+      - "traefik.http.routers.actions.middlewares=actions-stripprefix"
+      - "traefik.http.middlewares.actions-stripprefix.stripprefix.prefixes=/actions"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.action_config
+
+  admin:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: admin
+    # image:qolzam/admin:v2.1.0
+    volumes:
+      - ../micros/admin:/usr/local/go/src/github.com/red-gold/telar-web/micros/admin
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.admin.rule=PathPrefix(`/admin`)"
+      - "traefik.http.services.admin.loadbalancer.server.port=8080"
+      - "traefik.http.routers.admin.entrypoints=web"
+      - "traefik.http.routers.admin.middlewares=admin-stripprefix"
+      - "traefik.http.middlewares.admin-stripprefix.stripprefix.prefixes=/admin"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.admin_config
+
+  auth:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: auth
+    # image:qolzam/auth:v2.1.0
+    volumes:
+      - ../micros/auth:/usr/local/go/src/github.com/red-gold/telar-web/micros/auth
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8080"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.routers.auth.middlewares=auth-stripprefix"
+      - "traefik.http.middlewares.auth-stripprefix.stripprefix.prefixes=/auth"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.auth_config
+
+  notifications:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: notifications
+    # image:qolzam/notifications:v2.1.0
+    volumes:
+      - ../micros/notifications:/usr/local/go/src/github.com/red-gold/telar-web/micros/notifications
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.notifications.rule=PathPrefix(`/notifications`)"
+      - "traefik.http.services.notifications.loadbalancer.server.port=8080"
+      - "traefik.http.routers.notifications.entrypoints=web"
+      - "traefik.http.routers.notifications.middlewares=notifications-stripprefix"
+      - "traefik.http.middlewares.notifications-stripprefix.stripprefix.prefixes=/notifications"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.notification_config
+
+  profile:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: profile
+    # image:qolzam/profile:v2.1.0
+    volumes:
+      - ../micros/profile:/usr/local/go/src/github.com/red-gold/telar-web/micros/profile
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.profile.rule=PathPrefix(`/profile`)"
+      - "traefik.http.services.profile.loadbalancer.server.port=8080"
+      - "traefik.http.routers.profile.entrypoints=web"
+      - "traefik.http.routers.profile.middlewares=profile-stripprefix"
+      - "traefik.http.middlewares.profile-stripprefix.stripprefix.prefixes=/profile"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.profile_config
+
+  setting:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: setting
+    # image:qolzam/setting:v2.1.0
+    volumes:
+      - ../micros/setting:/usr/local/go/src/github.com/red-gold/telar-web/micros/setting
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.setting.rule=PathPrefix(`/setting`)"
+      - "traefik.http.services.setting.loadbalancer.server.port=8080"
+      - "traefik.http.routers.setting.entrypoints=web"
+      - "traefik.http.routers.setting.middlewares=setting-stripprefix"
+      - "traefik.http.middlewares.setting-stripprefix.stripprefix.prefixes=/setting"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.setting_config
+
+  storage:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        MICRONAME: storage
+    # image:qolzam/storage:v2.1.0
+    volumes:
+      - ../micros/storage:/usr/local/go/src/github.com/red-gold/telar-web/micros/storage
+      - $GOPATH/pkg/mod:/go/pkg/mod
+    labels:
+      # Enable public access
+      - "traefik.http.routers.storage.rule=PathPrefix(`/storage`)"
+      - "traefik.http.services.storage.loadbalancer.server.port=8080"
+      - "traefik.http.routers.storage.entrypoints=web"
+      - "traefik.http.routers.storage.middlewares=storage-stripprefix"
+      - "traefik.http.middlewares.storage-stripprefix.stripprefix.prefixes=/storage"
+    env_file:
+      - ../config/env/.env.app_config
+      - ../config/env/.env.secrets
+      - ../config/env/.env.gateway_config
+      - ../config/env/.env.storage_config

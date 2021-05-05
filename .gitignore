@@ -14,4 +14,5 @@ template/*
 micros/.DS_Store
 */.DS_Store
 config/env/.env.secrets
-docker/mongodb
+docker/mongodb/*
+docker/minio-persistence/*
