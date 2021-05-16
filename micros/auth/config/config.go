@@ -92,6 +92,12 @@ func loadAllConfig() {
 		log.Printf("[INFO]: AuthWebURI information loaded from env [%s] ", authWebURI)
 	}
 
+	WebURL, ok := os.LookupEnv("web_url")
+	if ok {
+		AuthConfig.WebURL = WebURL
+		log.Printf("[INFO]: Web URL information loaded from env [%s] ", WebURL)
+	}
+
 	scope, ok := os.LookupEnv("oauth_scope")
 	if ok {
 		AuthConfig.Scope = scope

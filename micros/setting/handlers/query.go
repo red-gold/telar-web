@@ -9,6 +9,7 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	handler "github.com/openfaas-incubator/go-function-sdk"
+	"github.com/red-gold/telar-core/pkg/log"
 	server "github.com/red-gold/telar-core/server"
 	utils "github.com/red-gold/telar-core/utils"
 	models "github.com/red-gold/telar-web/micros/setting/models"
@@ -224,6 +225,60 @@ func GetUserSettingHandle(db interface{}) func(server.Request) (handler.Response
 		}
 		return handler.Response{
 			Body:       []byte(body),
+			StatusCode: http.StatusOK,
+		}, nil
+	}
+}
+
+// GetSettingByUserIds a function invocation to setting by user ids
+func GetSettingByUserIds(db interface{}) func(server.Request) (handler.Response, error) {
+	return func(req server.Request) (handler.Response, error) {
+
+		// Parse model object
+		var model models.GetSettingsModel
+		if err := json.Unmarshal(req.Body, &model); err != nil {
+			errorMessage := fmt.Sprintf("Unmarshal  models.GetProfilesModel array %s", err.Error())
+			log.Error(errorMessage)
+			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("getProfilesModelMarshalError", errorMessage)}, nil
+		}
+
+		if !(len(model.UserIds) > 0) {
+			log.Error("model.UserIds is empty ")
+			return handler.Response{StatusCode: http.StatusInternalServerError}, nil
+
+		}
+
+		// Create service
+		userSettingService, serviceErr := service.NewUserSettingService(db)
+		if serviceErr != nil {
+			log.Error("Create user service  %s", serviceErr.Error())
+			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
+		}
+
+		foundUserSetting, err := userSettingService.FindSettingByUserIds(model.UserIds, model.Type)
+		if err != nil {
+			log.Error("Find setting by user ids  %s", err.Error())
+			return handler.Response{StatusCode: http.StatusInternalServerError}, err
+		}
+
+		mappedSetting := make(map[string]string)
+		for _, setting := range foundUserSetting {
+			key := fmt.Sprintf("%s:%s:%s", setting.OwnerUserId, setting.Type, setting.Name)
+			mappedSetting[key] = setting.Value
+		}
+
+		body, marshalErr := json.Marshal(mappedSetting)
+		if marshalErr != nil {
+			errorMessage := fmt.Sprintf("Error while marshaling mappedSetting: %s",
+				marshalErr.Error())
+			log.Error(errorMessage)
+			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("marshalUserProfilesError", errorMessage)},
+				marshalErr
+
+		}
+
+		return handler.Response{
+			Body:       body,
 			StatusCode: http.StatusOK,
 		}, nil
 	}

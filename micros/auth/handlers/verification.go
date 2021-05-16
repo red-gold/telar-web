@@ -196,9 +196,9 @@ func VerifySignupHandle(db interface{}) func(http.ResponseWriter, *http.Request,
 		tokenModel := &TokenModel{
 			token:            ProviderAccessToken{},
 			oauthProvider:    nil,
-			providerName:     "telar",
+			providerName:     *appConfig.AppName,
 			profile:          &provider.Profile{Name: fullName, ID: userId, Login: email},
-			organizationList: "Red Gold",
+			organizationList: *appConfig.OrgName,
 			claim: UserClaim{
 				DisplayName: fullName,
 				Email:       email,

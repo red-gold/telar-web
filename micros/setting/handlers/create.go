@@ -57,7 +57,7 @@ func CreateSettingGroupHandle(db interface{}) func(server.Request) (handler.Resp
 	return func(req server.Request) (handler.Response, error) {
 
 		// Create the model object
-		var model models.CreateSettingGroupModel
+		var model models.CreateMultipleSettingsModel
 		if err := json.Unmarshal(req.Body, &model); err != nil {
 			errorMessage := fmt.Sprintf("Unmarshal CreateSettingGroupModel Error %s", err.Error())
 			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("modelMarshalError", errorMessage)}, nil
@@ -71,16 +71,17 @@ func CreateSettingGroupHandle(db interface{}) func(server.Request) (handler.Resp
 		}
 
 		var userSettingList []domain.UserSetting
-		for _, setting := range model.List {
-
-			newUserSetting := domain.UserSetting{
-				OwnerUserId: req.UserID,
-				Name:        setting.Name,
-				Value:       setting.Value,
-				Type:        model.Type,
-				IsSystem:    false,
+		for _, settings := range model.List {
+			for _, setting := range settings.List {
+				newUserSetting := domain.UserSetting{
+					OwnerUserId: req.UserID,
+					Name:        setting.Name,
+					Value:       setting.Value,
+					Type:        settings.Type,
+					IsSystem:    false,
+				}
+				userSettingList = append(userSettingList, newUserSetting)
 			}
-			userSettingList = append(userSettingList, newUserSetting)
 		}
 
 		if err := userSettingService.SaveManyUserSetting(userSettingList); err != nil {

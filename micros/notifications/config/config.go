@@ -22,6 +22,12 @@ func loadConfigFromEnvironment() {
 		log.Printf("[INFO]: Base route information loaded from env.")
 	}
 
+	web_url, ok := os.LookupEnv("web_url")
+	if ok {
+		NotificationConfig.WebURL = web_url
+		log.Printf("[INFO]: Web URL information loaded from env.")
+	}
+
 	queryPrettyURL, ok := os.LookupEnv("query_pretty_url")
 	if ok {
 		parsedQueryPrettyURL, errParseDebug := strconv.ParseBool(queryPrettyURL)

@@ -5,6 +5,7 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/data"
 	coreData "github.com/red-gold/telar-core/data"
 	repo "github.com/red-gold/telar-core/data"
 	"github.com/red-gold/telar-core/data/mongodb"
@@ -91,6 +92,92 @@ func (s NotificationServiceImpl) FindNotificationList(filter interface{}, limit 
 	return notificationList, nil
 }
 
+// FindNotificationsReceiver get all notifications by filter including receiver profile
+func (s NotificationServiceImpl) FindNotificationsReceiver(filter interface{}, limit int64, skip int64, sort map[string]int) ([]dto.Notification, error) {
+	var pipeline []interface{}
+
+	matchOperator := make(map[string]interface{})
+	matchOperator["$match"] = filter
+
+	sortOperator := make(map[string]interface{})
+	sortOperator["$sort"] = sort
+
+	pipeline = append(pipeline, matchOperator, sortOperator)
+
+	if skip > 0 {
+		skipOperator := make(map[string]interface{})
+		skipOperator["$skip"] = skip
+		pipeline = append(pipeline, skipOperator)
+	}
+
+	if limit > 0 {
+		limitOperator := make(map[string]interface{})
+		limitOperator["$limit"] = limit
+		pipeline = append(pipeline, limitOperator)
+	}
+
+	lookupOperator := make(map[string]interface{})
+	lookupOperator["$lookup"] = map[string]string{
+		"localField":   "notifyRecieverUserId",
+		"from":         "userProfile",
+		"foreignField": "objectId",
+		"as":           "userinfo",
+	}
+
+	unwindOperator := make(map[string]interface{})
+	unwindOperator["$unwind"] = "$userinfo"
+
+	projectOperator := make(map[string]interface{})
+	project := make(map[string]interface{})
+
+	project["objectId"] = 1
+	project["ownerUserId"] = 1
+	project["ownerDisplayName"] = 1
+	project["ownerAvatar"] = 1
+	project["created_date"] = 1
+	project["description"] = 1
+	project["url"] = 1
+	project["notifyRecieverUserId"] = 1
+	project["notifyRecieverEmail"] = "$userinfo.email"
+	project["targetId"] = 1
+	project["isSeen"] = 1
+	project["type"] = 1
+	project["emailNotification"] = 1
+	project["isEmailSent"] = 1
+
+	projectOperator["$project"] = project
+
+	pipeline = append(pipeline, lookupOperator, unwindOperator, projectOperator)
+
+	result := <-s.NotificationRepo.Aggregate(notificationCollectionName, pipeline)
+	defer result.Close()
+	if result.Error() != nil {
+		return nil, result.Error()
+	}
+	var commentList []dto.Notification
+	for result.Next() {
+		var comment dto.Notification
+		errDecode := result.Decode(&comment)
+		if errDecode != nil {
+			return nil, fmt.Errorf("Error docoding on dto.Comment")
+		}
+		commentList = append(commentList, comment)
+	}
+
+	return commentList, nil
+}
+
+// GetLastNotifications find by owner user id
+func (s NotificationServiceImpl) GetLastNotifications() ([]dto.Notification, error) {
+	sortMap := make(map[string]int)
+	sortMap["created_date"] = -1
+	filter := make(map[string]interface{})
+	ne := make(map[string]interface{})
+	ne["$ne"] = true
+	filter["isEmailSent"] = ne
+	return s.FindNotificationsReceiver(filter, 10, 0, sortMap)
+}
+
 // FindByOwnerUserId find by owner user id
 func (s NotificationServiceImpl) FindByOwnerUserId(ownerUserId uuid.UUID) ([]dto.Notification, error) {
 	sortMap := make(map[string]int)
@@ -124,7 +211,72 @@ func (s NotificationServiceImpl) UpdateNotification(filter interface{}, data int
 	return nil
 }
 
-// UpdateNotification update the notification
+// UpdateManyNotifications update many notifications
+func (s NotificationServiceImpl) UpdateManyNotifications(filter interface{}, data interface{}, opts ...*coreData.UpdateOptions) error {
+
+	result := <-s.NotificationRepo.UpdateMany(notificationCollectionName, filter, data, opts...)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// UpdateBulkNotification update bulk notification
+func (s NotificationServiceImpl) UpdateBulkNotification(bulk []data.BulkUpdateOne) error {
+
+	result := <-s.NotificationRepo.BulkUpdateOne(notificationCollectionName, bulk)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// UpdateBulkNotificationList update bulk notification list
+func (s NotificationServiceImpl) UpdateBulkNotificationList(userNotification []dto.Notification) error {
+	var bulkList []repo.BulkUpdateOne
+	for _, notification := range userNotification {
+		filter := struct {
+			ObjectId    uuid.UUID `json:"objectId" bson:"objectId"`
+			OwnerUserId uuid.UUID `json:"ownerUserId" bson:"ownerUserId"`
+		}{
+			ObjectId:    notification.ObjectId,
+			OwnerUserId: notification.OwnerUserId,
+		}
+
+		setOperation := make(map[string]interface{})
+		setOperation["$set"] = notification
+		bulkItem := repo.BulkUpdateOne{
+			Filter: filter,
+			Data:   setOperation,
+		}
+		bulkList = append(bulkList, bulkItem)
+	}
+	return s.UpdateBulkNotification(bulkList)
+}
+
+// UpdateEmailSent update bulk notification list
+func (s NotificationServiceImpl) UpdateEmailSent(notifyIds []uuid.UUID) error {
+
+	include := make(map[string]interface{})
+	include["$in"] = notifyIds
+
+	filter := make(map[string]interface{})
+	filter["objectId"] = include
+
+	updateOperator := coreData.UpdateOperator{
+		Set: map[string]bool{
+			"isEmailSent": true,
+		},
+	}
+	err := s.UpdateManyNotifications(filter, updateOperator)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+// UpdateNotificationById update the notification
 func (s NotificationServiceImpl) UpdateNotificationById(data *dto.Notification) error {
 	filter := struct {
 		ObjectId    uuid.UUID `json:"objectId" bson:"objectId"`

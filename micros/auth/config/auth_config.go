@@ -14,6 +14,7 @@ type (
 		AdminPassword          string
 		ExternalRedirectDomain string
 		AuthWebURI             string
+		WebURL                 string
 		Scope                  string
 		CookieRootDomain       string
 		CookieExpiresIn        time.Duration

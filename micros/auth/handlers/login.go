@@ -201,13 +201,34 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			return loginPageResponse(loginData)
 		}
 
-		foundUserProfile, errProfile := getUserProfileByID(foundUser.ObjectId)
-		if errProfile != nil || foundUserProfile == nil {
-			if errProfile != nil {
-				fmt.Printf("\n User profile  %s\n", errProfile.Error())
+		profileChannel := readProfileAsync(foundUser.ObjectId)
+		langChannel := readLanguageSettingAsync(foundUser.ObjectId, getUserInfoReq(req))
+
+		profileResult, langResult := <-profileChannel, <-langChannel
+		if profileResult.Error != nil || profileResult.Profile == nil {
+			if profileResult.Error != nil {
+				fmt.Printf("\n User profile  %s\n", profileResult.Error.Error())
 			}
 			loginData.message = "User Profile error!"
 			return loginPageResponse(loginData)
+		}
+
+		currentUserLang := "en"
+		fmt.Println("langResult.settings", langResult.settings)
+		langSettigPath := getSettingPath(foundUser.ObjectId, "lang", "current")
+		if val, ok := langResult.settings[langSettigPath]; ok && val != "" {
+			currentUserLang = val
+		} else {
+			go func() {
+				userInfoReq := &UserInfoInReq{
+					UserId:      foundUser.ObjectId,
+					Username:    foundUser.Username,
+					Avatar:      profileResult.Profile.Avatar,
+					DisplayName: profileResult.Profile.FullName,
+					SystemRole:  foundUser.Role,
+				}
+				createDefaultLangSetting(userInfoReq)
+			}()
 		}
 
 		tokenModel := &TokenModel{
@@ -217,9 +238,9 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 			profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
 			organizationList: "Red Gold",
 			claim: UserClaim{
-				DisplayName: foundUserProfile.FullName,
-				Email:       foundUserProfile.Email,
-				Avatar:      foundUserProfile.Avatar,
+				DisplayName: profileResult.Profile.FullName,
+				Email:       profileResult.Profile.Email,
+				Avatar:      profileResult.Profile.Avatar,
 				UserId:      foundUser.ObjectId.String(),
 				Role:        foundUser.Role,
 			},
@@ -235,10 +256,31 @@ func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, 
 
 		// Write session on cookie
 		writeSessionOnCookie(w, session, authConfig)
-		fmt.Printf("\nSession is created: %s \n", session)
-		webURL := authConfig.ExternalRedirectDomain
 
-		fmt.Printf("\nwebURL: %s \n", webURL)
+		// Write user language on cookie
+		writeUserLangOnCookie(w, currentUserLang)
+
+		webURL := authConfig.ExternalRedirectDomain
+		reqQuery := r.URL.Query()
+		log.Printf("SetCookie done, redirect to: %s", reqQuery)
+
+		// Redirect to original requested resource (if specified in r=)
+		redirect := reqQuery.Get("r")
+		if len(redirect) > 0 {
+			log.Printf(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
+
+			// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
+
+			return handler.Response{
+				Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + redirect + `");</script></html>`),
+				StatusCode: http.StatusOK,
+				Header: map[string][]string{
+					"Content-Type": {" text/html; charset=utf-8"},
+				},
+			}, nil
+
+		}
+
 		return handler.Response{
 			Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + webURL + `");</script></html>`),
 			StatusCode: http.StatusOK,

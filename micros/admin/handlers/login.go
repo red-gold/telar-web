@@ -146,7 +146,6 @@ func checkSetupEnabled() (bool, error) {
 		return false, functionCallErr
 	}
 
-	fmt.Printf("\n**********************resData: %v\n", string(resData))
 	var adminCheck AdminCheck
 	jsonErr := json.Unmarshal(resData, &adminCheck)
 	if jsonErr != nil {

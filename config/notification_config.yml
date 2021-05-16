@@ -1,3 +1,7 @@
 environment:
   base_route: "/notifications"
   write_debug: "true"
+  web_url: https://social.telar.dev
+  exec_timeout: 20s
+  read_timeout: 20s
+  write_timeout: 20s

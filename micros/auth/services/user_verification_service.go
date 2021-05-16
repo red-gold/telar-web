@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	uuid "github.com/gofrs/uuid"
-	"github.com/red-gold/telar-core/config"
-	tsconfig "github.com/red-gold/telar-core/config"
+	coreConfig "github.com/red-gold/telar-core/config"
 	repo "github.com/red-gold/telar-core/data"
 	"github.com/red-gold/telar-core/data/mongodb"
 	mongoRepo "github.com/red-gold/telar-core/data/mongodb"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
+	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
 )
 
@@ -56,8 +56,8 @@ func NewUserVerificationService(db interface{}) (UserVerificationService, error)
 
 	userVerificationService := &UserVerificationServiceImpl{}
 
-	switch *config.AppConfig.DBType {
-	case config.DB_MONGO:
+	switch *coreConfig.AppConfig.DBType {
+	case coreConfig.DB_MONGO:
 
 		mongodb := db.(mongodb.MongoDatabase)
 		userVerificationService.UserVerificationRepo = mongoRepo.NewDataRepositoryMongo(mongodb)
@@ -260,7 +260,7 @@ func (s UserVerificationServiceImpl) VerifyUserByCode(userId uuid.UUID, verifyId
 
 // CreateEmailVerficationToken Create email verification token
 func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVerificationToken,
-	coreConfig *tsconfig.Configuration) (ret string, err error) {
+	coreConfig *coreConfig.Configuration) (ret string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -273,13 +273,19 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 
 	code := utils.GenerateDigits(4)
 	emailResStatus, emailResErr := email.SendEmail(emailReq, input.HtmlTmplPath, struct {
-		Name    string
-		AppName string
-		Code    string
+		Name      string
+		AppName   string
+		AppURL    string
+		Code      string
+		OrgName   string
+		OrgAvatar string
 	}{
-		Name:    input.Username,
-		AppName: *coreConfig.AppName,
-		Code:    code,
+		Name:      input.FullName,
+		AppName:   *coreConfig.AppName,
+		AppURL:    authConfig.AuthConfig.WebURL,
+		Code:      code,
+		OrgName:   *coreConfig.OrgName,
+		OrgAvatar: *coreConfig.OrgAvatar,
 	})
 
 	if emailResErr != nil {
@@ -325,11 +331,11 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 
 // CreatePhoneVerficationToken Create phone verification token
 func (s UserVerificationServiceImpl) CreatePhoneVerficationToken(input PhoneVerificationToken,
-	coreConfig *tsconfig.Configuration) (string, error) {
+	coreConfig *coreConfig.Configuration) (string, error) {
 
 	// Send SMS
 
-	phone, phoneErr := utils.NewPhone(*coreConfig.PhoneAuthToken, *coreConfig.PhoneAuthId, *config.AppConfig.PhoneSourceNumber)
+	phone, phoneErr := utils.NewPhone(*coreConfig.PhoneAuthToken, *coreConfig.PhoneAuthId, *coreConfig.PhoneSourceNumber)
 	if phoneErr != nil {
 		return "", phoneErr
 	}

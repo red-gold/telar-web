@@ -17,6 +17,7 @@ type UserProfile struct {
 	Email          string                        `json:"email" bson:"email"`
 	Birthday       int64                         `json:"birthday" bson:"birthday"`
 	WebUrl         string                        `json:"webUrl" bson:"webUrl"`
+	Lang           string                        `json:"lang" bson:"lang"`
 	CompanyName    string                        `json:"companyName" bson:"companyName"`
 	VoteCount      int64                         `json:"voteCount" bson:"voteCount"`
 	ShareCount     int64                         `json:"shareCount" bson:"shareCount"`

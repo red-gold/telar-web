@@ -42,6 +42,10 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		server.PUT("/", handlers.UpdateUserSettingHandle(db), coreServer.RouteProtectionCookie)
 		server.DELETE("/", handlers.DeleteUserAllSettingHandle(db), coreServer.RouteProtectionCookie)
 		server.GET("/", handlers.GetAllUserSetting(db), coreServer.RouteProtectionCookie)
+
+		// DTO handlers
+		server.POST("/dto/ids", handlers.GetSettingByUserIds(db), coreServer.RouteProtectionHMAC)
+
 	}
 	server.ServeHTTP(w, r)
 }

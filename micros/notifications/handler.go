@@ -7,12 +7,14 @@ import (
 
 	coreServer "github.com/red-gold/telar-core/server"
 	micros "github.com/red-gold/telar-web/micros"
+	notifyConfig "github.com/red-gold/telar-web/micros/notifications/config"
 	"github.com/red-gold/telar-web/micros/notifications/handlers"
 )
 
 func init() {
 
 	micros.InitConfig()
+	notifyConfig.InitConfig()
 }
 
 // Cache state
@@ -38,6 +40,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	// Server Routing
 	if server == nil {
 		server = coreServer.NewServerRouter()
+		server.POST("/check", handlers.CheckNotifyEmailHandle(db), coreServer.RouteProtectionPublic)
 		server.POST("/", handlers.CreateNotificationHandle(db), coreServer.RouteProtectionHMAC)
 		server.PUT("/", handlers.UpdateNotificationHandle(db), coreServer.RouteProtectionHMAC)
 		server.PUT("/seen/:notificationId", handlers.SeenNotificationHandle(db), coreServer.RouteProtectionCookie)

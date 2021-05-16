@@ -162,6 +162,27 @@ func (s UserSettingServiceImpl) FindById(objectId uuid.UUID) (*dto.UserSetting, 
 	return s.FindOneUserSetting(filter)
 }
 
+// FindSettingByUserIds Find setting by user IDs
+func (s UserSettingServiceImpl) FindSettingByUserIds(userIds []uuid.UUID, settingType string) ([]dto.UserSetting, error) {
+	filter := make(map[string]interface{})
+	sortMap := make(map[string]int)
+	sortMap["createdDate"] = -1
+
+	include := make(map[string]interface{})
+	include["$in"] = userIds
+	filter["ownerUserId"] = include
+
+	if settingType != "" {
+		equal := make(map[string]interface{})
+		equal["$eq"] = settingType
+		filter["type"] = equal
+	}
+
+	result, err := s.FindUserSettingList(filter, 0, 0, sortMap)
+
+	return result, err
+}
+
 // UpdateUserSetting update the userSetting
 func (s UserSettingServiceImpl) UpdateUserSetting(filter interface{}, data interface{}) error {
 
@@ -194,9 +215,11 @@ func (s UserSettingServiceImpl) UpdateUserSettingsById(ownerUserId uuid.UUID, us
 			OwnerUserId: setting.OwnerUserId,
 		}
 
+		setOperation := make(map[string]interface{})
+		setOperation["$set"] = setting
 		bulkItem := repo.BulkUpdateOne{
 			Filter: filter,
-			Data:   setting,
+			Data:   setOperation,
 		}
 		bulkList = append(bulkList, bulkItem)
 	}

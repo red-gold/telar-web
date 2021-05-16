@@ -15,17 +15,23 @@ import (
 	"github.com/alexellis/hmac"
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/gofrs/uuid"
-	af "github.com/red-gold/telar-core/config"
 	coreConfig "github.com/red-gold/telar-core/config"
 	tsconfig "github.com/red-gold/telar-core/config"
 	log "github.com/red-gold/telar-core/pkg/log"
 	server "github.com/red-gold/telar-core/server"
 	"github.com/red-gold/telar-core/utils"
-	cf "github.com/red-gold/telar-web/micros/auth/config"
+	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
-	settingModels "github.com/red-gold/telar-web/micros/setting/models"
 )
+
+type UserInfoInReq struct {
+	UserId      uuid.UUID `json:"userId"`
+	Username    string    `json:"username"`
+	Avatar      string    `json:"avatar"`
+	DisplayName string    `json:"displayName"`
+	SystemRole  string    `json:"systemRole"`
+}
 
 type htmlTemplate struct {
 	Name    string
@@ -85,7 +91,48 @@ type ProviderAccessToken struct {
 	AccessToken string `json:"access_token"`
 }
 
-func buildGitHubURL(config *cf.Configuration, string, scope string) *url.URL {
+type ProfileResultAsync struct {
+	Profile *models.UserProfileModel
+	Error   error
+}
+
+type UsersLangSettingsResultAsync struct {
+	settings map[string]string
+	Error    error
+}
+
+// getHeadersFromUserInfoReq
+func getHeadersFromUserInfoReq(info *UserInfoInReq) map[string][]string {
+	userHeaders := make(map[string][]string)
+	userHeaders["uid"] = []string{info.UserId.String()}
+	userHeaders["email"] = []string{info.Username}
+	userHeaders["avatar"] = []string{info.Avatar}
+	userHeaders["displayName"] = []string{info.DisplayName}
+	userHeaders["role"] = []string{info.SystemRole}
+
+	return userHeaders
+}
+
+// getUserInfoReq
+func getUserInfoReq(req server.Request) *UserInfoInReq {
+	userInfoInReq := &UserInfoInReq{
+		UserId:      req.UserID,
+		Username:    req.Username,
+		Avatar:      req.Avatar,
+		DisplayName: req.DisplayName,
+		SystemRole:  req.SystemRole,
+	}
+	return userInfoInReq
+
+}
+
+// getSettingPath
+func getSettingPath(userId uuid.UUID, settingType, settingKey string) string {
+	key := fmt.Sprintf("%s:%s:%s", userId.String(), settingType, settingKey)
+	return key
+}
+
+func buildGitHubURL(config *authConfig.Configuration, string, scope string) *url.URL {
 	authURL := "https://github.com/login/oauth/authorize"
 	u, _ := url.Parse(authURL)
 	q := u.Query()
@@ -103,7 +150,7 @@ func buildGitHubURL(config *cf.Configuration, string, scope string) *url.URL {
 	return u
 }
 
-func buildGitLabURL(config *cf.Configuration) *url.URL {
+func buildGitLabURL(config *authConfig.Configuration) *url.URL {
 	authURL := config.OAuthProviderBaseURL + "/oauth/authorize"
 
 	u, _ := url.Parse(authURL)
@@ -113,7 +160,7 @@ func buildGitLabURL(config *cf.Configuration) *url.URL {
 	q.Set("response_type", "code")
 	q.Set("state", fmt.Sprintf("%d", time.Now().Unix()))
 
-	redirectURI := combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
+	redirectURI := combineURL(config.AuthWebURI, utils.GetPrettyURLf(combineURL(config.BaseRoute, "/oauth2/authorized")))
 
 	q.Set("redirect_uri", redirectURI)
 
@@ -150,8 +197,8 @@ func createOAuthSession(model *TokenModel) (string, error) {
 }
 
 // writeTokenOnCookie wite session on cookie
-func writeSessionOnCookie(w http.ResponseWriter, session string, config *cf.Configuration) {
-	appConfig := af.AppConfig
+func writeSessionOnCookie(w http.ResponseWriter, session string, config *authConfig.Configuration) {
+	appConfig := coreConfig.AppConfig
 	parts := strings.Split(session, ".")
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: true,
@@ -167,7 +214,7 @@ func writeSessionOnCookie(w http.ResponseWriter, session string, config *cf.Conf
 		Name:  *appConfig.PayloadCookieName,
 		Value: parts[1],
 		Path:  "/",
-		// Expires:  time.Now().Add(config.CookieExpiresIn),
+		// Expires: time.Now().Add(config.CookieExpiresIn),
 		Domain: config.CookieRootDomain,
 	})
 
@@ -181,11 +228,23 @@ func writeSessionOnCookie(w http.ResponseWriter, session string, config *cf.Conf
 	})
 }
 
+// Write user language on cookie
+func writeUserLangOnCookie(w http.ResponseWriter, lang string) {
+	http.SetCookie(w, &http.Cookie{
+		HttpOnly: false,
+		Name:     "social-lang",
+		Value:    lang,
+		Path:     "/",
+		// Expires:  time.Now().Add(config.CookieExpiresIn),
+		Domain: authConfig.AuthConfig.CookieRootDomain,
+	})
+}
+
 // createToken
 func createToken(model *TokenModel) (string, error) {
 	var err error
 	var session string
-	authConfig := &cf.AuthConfig
+	authConfig := &authConfig.AuthConfig
 	coreConfig := &tsconfig.AppConfig
 
 	privateKey, keyErr := jwt.ParseECPrivateKeyFromPEM([]byte(*coreConfig.PrivateKey))
@@ -233,67 +292,12 @@ func getToken(res *http.Response) (ProviderAccessToken, error) {
 	return token, fmt.Errorf("no body received from server")
 }
 
-// emailCodeVerifyTmpl
-func emailCodeVerifyTmpl(username string, code string, appName string) (string, error) {
-	return utils.ParseHtmlTemplate("html_template/email_code_verify_reset_pass.html",
-		htmlTemplate{Name: username, Code: code, AppName: appName})
-}
-
-// emailCodeVerifyResetPassTmpl
-func emailCodeVerifyResetPassTmpl(username string, code string, appName string, email string) (string, error) {
-	return utils.ParseHtmlTemplate("html_template/email_code_verify_reset_pass.html",
-		htmlTemplate{Name: username, Code: code, AppName: appName, Email: email})
-}
-
 func phoneVerifyCode(code string, appName string) string {
 	return fmt.Sprintf("Verfy code from %s : %s", code, appName)
 }
 
-// functionCall send request to another function/microservice using HMAC validation
-func functionCall(bytesReq []byte, url, method string) ([]byte, error) {
-	prettyURL := utils.GetPrettyURLf(url)
-	bodyReader := bytes.NewBuffer(bytesReq)
-	uri := *coreConfig.AppConfig.InternalGateway + prettyURL
-	fmt.Printf("\n[INFO] Function call URI [%s]", uri)
-	httpReq, httpErr := http.NewRequest(method, uri, bodyReader)
-	if httpErr != nil {
-		return nil, httpErr
-	}
-
-	payloadSecret := *coreConfig.AppConfig.PayloadSecret
-
-	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
-	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
-
-	c := http.Client{}
-	res, reqErr := c.Do(httpReq)
-	fmt.Printf("\nRes: %v\n", res)
-	if reqErr != nil {
-		return nil, fmt.Errorf("Error while sending reques to %s : %s", uri, reqErr.Error())
-	}
-	if res.Body != nil {
-		defer res.Body.Close()
-	}
-
-	resData, readErr := ioutil.ReadAll(res.Body)
-	if resData == nil || readErr != nil {
-		return nil, fmt.Errorf("failed to read response from admin check request.")
-	}
-
-	if res.StatusCode != http.StatusAccepted && res.StatusCode != http.StatusOK {
-		if res.StatusCode == http.StatusNotFound {
-			return nil, NotFoundHTTPStatusError
-		}
-		return nil, fmt.Errorf("failed to call %s api, invalid status: %s", prettyURL, res.Status)
-	}
-
-	return resData, nil
-}
-
-// functionCallByCookie send request to another function/microservice using cookie validation
-func functionCallByHeader(method string, bytesReq []byte, url string, header map[string][]string) ([]byte, error) {
+// functionCall send request to another function/microservice using cookie validation
+func functionCall(method string, bytesReq []byte, url string, header map[string][]string) ([]byte, error) {
 	prettyURL := utils.GetPrettyURLf(url)
 	bodyReader := bytes.NewBuffer(bytesReq)
 
@@ -328,44 +332,28 @@ func functionCallByHeader(method string, bytesReq []byte, url string, header map
 	}
 
 	if res.StatusCode != http.StatusAccepted && res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusNotFound {
+			return nil, NotFoundHTTPStatusError
+		}
 		return nil, fmt.Errorf("failed to call %s api, invalid status: %s", prettyURL, res.Status)
 	}
 
 	return resData, nil
 }
 
-func initUserSetup(userId uuid.UUID, email string, avatar string, displayName string, role string) error {
+// createDefaultLangSetting
+func createDefaultLangSetting(userInfoInReq *UserInfoInReq) error {
 
-	// Create admin header for http request
-	adminHeaders := make(map[string][]string)
-	adminHeaders["uid"] = []string{userId.String()}
-	adminHeaders["email"] = []string{email}
-	adminHeaders["avatar"] = []string{avatar}
-	adminHeaders["displayName"] = []string{displayName}
-	adminHeaders["role"] = []string{role}
-
-	circleURL := fmt.Sprintf("/circles/following/%s", userId)
-	_, circleErr := functionCall([]byte(""), circleURL, http.MethodPost)
-
-	if circleErr != nil {
-		return circleErr
-	}
-
-	// Create default setting for user
-	settingModel := settingModels.CreateSettingGroupModel{
-		Type: "notification",
-		List: []settingModels.SettingGroupItemModel{
+	settingModel := models.CreateMultipleSettingsModel{
+		List: []models.CreateSettingGroupModel{
 			{
-				Name:  "send_email_on_like",
-				Value: "false",
-			},
-			{
-				Name:  "send_email_on_follow",
-				Value: "false",
-			},
-			{
-				Name:  "send_email_on_comment_post",
-				Value: "false",
+				Type: "lang",
+				List: []models.SettingGroupItemModel{
+					{
+						Name:  "current",
+						Value: "en",
+					},
+				},
 			},
 		},
 	}
@@ -377,7 +365,72 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 
 	// Send request for setting
 	settingURL := "/setting"
-	_, settingErr := functionCallByHeader(http.MethodPost, settingBytes, settingURL, adminHeaders)
+	_, settingErr := functionCall(http.MethodPost, settingBytes, settingURL, getHeadersFromUserInfoReq(userInfoInReq))
+
+	if settingErr != nil {
+		return settingErr
+	}
+	return nil
+}
+
+// initUserSetup
+func initUserSetup(userId uuid.UUID, email string, avatar string, displayName string, role string) error {
+
+	// Create admin header for http request
+	adminHeaders := make(map[string][]string)
+	adminHeaders["uid"] = []string{userId.String()}
+	adminHeaders["email"] = []string{email}
+	adminHeaders["avatar"] = []string{avatar}
+	adminHeaders["displayName"] = []string{displayName}
+	adminHeaders["role"] = []string{role}
+
+	circleURL := fmt.Sprintf("/circles/following/%s", userId)
+	_, circleErr := functionCall(http.MethodPost, []byte(""), circleURL, adminHeaders)
+
+	if circleErr != nil {
+		return circleErr
+	}
+
+	// Create default setting for user
+	settingModel := models.CreateMultipleSettingsModel{
+		List: []models.CreateSettingGroupModel{
+			{
+				Type: "notification",
+				List: []models.SettingGroupItemModel{
+					{
+						Name:  "send_email_on_like",
+						Value: "false",
+					},
+					{
+						Name:  "send_email_on_follow",
+						Value: "false",
+					},
+					{
+						Name:  "send_email_on_comment_post",
+						Value: "false",
+					},
+				},
+			},
+			{
+				Type: "lang",
+				List: []models.SettingGroupItemModel{
+					{
+						Name:  "current",
+						Value: "en",
+					},
+				},
+			},
+		},
+	}
+
+	settingBytes, marshalErr := json.Marshal(&settingModel)
+	if marshalErr != nil {
+		return marshalErr
+	}
+
+	// Send request for setting
+	settingURL := "/setting"
+	_, settingErr := functionCall(http.MethodPost, settingBytes, settingURL, adminHeaders)
 
 	if settingErr != nil {
 		return settingErr
@@ -405,7 +458,7 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 		return marshalErr
 	}
 	actionRoomURL := "/actions/room"
-	_, actionRoomErr := functionCallByHeader(http.MethodPost, actiomRoomBytes, actionRoomURL, adminHeaders)
+	_, actionRoomErr := functionCall(http.MethodPost, actiomRoomBytes, actionRoomURL, adminHeaders)
 
 	if actionRoomErr != nil {
 		return actionRoomErr
@@ -417,7 +470,7 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 // getUserProfileByID Get user profile by user ID
 func getUserProfileByID(userID uuid.UUID) (*models.UserProfileModel, error) {
 	profileURL := fmt.Sprintf("/profile/dto/id/%s", userID.String())
-	foundProfileData, err := functionCall([]byte(""), profileURL, http.MethodGet)
+	foundProfileData, err := functionCall(http.MethodGet, []byte(""), profileURL, nil)
 	if err != nil {
 		if err == NotFoundHTTPStatusError {
 			return nil, nil
@@ -442,7 +495,7 @@ func saveUserProfile(model *models.UserProfileModel) error {
 		log.Error("marshal models.UserProfileModel %s", err.Error())
 		return fmt.Errorf("saveProfile/marshalUserProfileModel")
 	}
-	_, err = functionCall(data, profileURL, http.MethodPost)
+	_, err = functionCall(http.MethodPost, data, profileURL, nil)
 	if err != nil {
 		log.Error("functionCall (%s) -  %s", profileURL, err.Error())
 		return fmt.Errorf("saveUserProfile/functionCall")
@@ -464,10 +517,10 @@ func updateUserProfile(model *models.ProfileUpdateModel, userId uuid.UUID, email
 	headers["avatar"] = []string{avatar}
 	headers["displayName"] = []string{displayName}
 	headers["role"] = []string{role}
-	_, err = functionCallByHeader(http.MethodPut, data, profileURL, headers)
+	_, err = functionCall(http.MethodPut, data, profileURL, headers)
 	if err != nil {
-		log.Error("functionCallByHeader (%s) -  %s", profileURL, err.Error())
-		return fmt.Errorf("updateUserProfile/functionCallByHeader")
+		log.Error("functionCall (%s) -  %s", profileURL, err.Error())
+		return fmt.Errorf("updateUserProfile/functionCall")
 	}
 	return nil
 }
@@ -476,4 +529,61 @@ func updateUserProfile(model *models.ProfileUpdateModel, userId uuid.UUID, email
 func generateRandomNumber(min int, max int) int {
 	rand.Seed(time.Now().UnixNano())
 	return (rand.Intn(max-min+1) + min)
+}
+
+// readProfileAsync Read profile async
+func readProfileAsync(userID uuid.UUID) <-chan ProfileResultAsync {
+	r := make(chan ProfileResultAsync)
+	go func() {
+		defer close(r)
+
+		profile, err := getUserProfileByID(userID)
+		if err != nil {
+			r <- ProfileResultAsync{Error: err}
+			return
+		}
+		r <- ProfileResultAsync{Profile: profile}
+
+	}()
+	return r
+}
+
+// getUsersLangSettings Get users language settings
+func getUsersLangSettings(userIds []uuid.UUID, userInfoInReq *UserInfoInReq) (map[string]string, error) {
+	url := "/setting/dto/ids"
+	model := models.GetSettingsModel{
+		UserIds: userIds,
+		Type:    "lang",
+	}
+	payload, marshalErr := json.Marshal(model)
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+
+	resData, callErr := functionCall(http.MethodPost, payload, url, getHeadersFromUserInfoReq(userInfoInReq))
+	if callErr != nil {
+
+		return nil, fmt.Errorf("Cannot send request to %s - %s", url, callErr.Error())
+	}
+
+	var parsedData map[string]string
+	json.Unmarshal(resData, &parsedData)
+	return parsedData, nil
+}
+
+// readLanguageSettingAsync Read language setting async
+func readLanguageSettingAsync(userID uuid.UUID, userInfoInReq *UserInfoInReq) <-chan UsersLangSettingsResultAsync {
+	r := make(chan UsersLangSettingsResultAsync)
+	go func() {
+		defer close(r)
+
+		settings, err := getUsersLangSettings([]uuid.UUID{userID}, userInfoInReq)
+		if err != nil {
+			r <- UsersLangSettingsResultAsync{Error: err}
+			return
+		}
+		r <- UsersLangSettingsResultAsync{settings: settings}
+
+	}()
+	return r
 }

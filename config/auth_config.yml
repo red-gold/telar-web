@@ -1,17 +1,18 @@
 environment:
   base_route: ""
-  external_redirect_domain: "https://social.telar.dev"
-  auth_web_uri: "https://auth.telar.dev"
+  external_redirect_domain: https://social.telar.dev
+  web_url: https://social.telar.dev
+  auth_web_uri: https://auth.telar.dev
   client_id: 7a9cbbf3e0bce602784f
   client_secret: ""
-  exec_timeout: 20s
   github_app_id: "12345"
   oauth_client_secret_path: /var/openfaas/secrets/ts-client-secret
   oauth_provider: github
   oauth_provider_base_url: ""
   oauth_telar_base_url: ""
-  read_timeout: 20s
   report_status: "true"
   verify_type: emv
   write_debug: "true"
+  exec_timeout: 20s
+  read_timeout: 20s
   write_timeout: 20s

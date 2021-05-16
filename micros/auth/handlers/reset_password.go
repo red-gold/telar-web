@@ -191,15 +191,21 @@ func ForgetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.R
 		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
 		emailResStatus, emailResErr := email.SendEmail(emailReq, "html_template/email_link_verify_reset_pass.html", struct {
-			Name    string
-			AppName string
-			Link    string
-			Email   string
+			Name      string
+			AppName   string
+			AppURL    string
+			Link      string
+			Email     string
+			OrgName   string
+			OrgAvatar string
 		}{
-			Name:    foundUserAuth.Username,
-			AppName: *appConfig.AppName,
-			Link:    fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, verifyId),
-			Email:   foundUserAuth.Username,
+			Name:      foundUserAuth.Username,
+			AppName:   *appConfig.AppName,
+			AppURL:    authConfig.WebURL,
+			Link:      fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, verifyId),
+			Email:     foundUserAuth.Username,
+			OrgName:   *appConfig.OrgName,
+			OrgAvatar: *appConfig.OrgAvatar,
 		})
 
 		if emailResErr != nil {

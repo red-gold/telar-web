@@ -14,6 +14,7 @@ type UserSettingService interface {
 	QueryUserSetting(search string, ownerUserId *uuid.UUID, userUserSettingTypeId *int, sortBy string, page int64) ([]dto.UserSetting, error)
 	FindById(objectId uuid.UUID) (*dto.UserSetting, error)
 	FindByOwnerUserId(ownerUserId uuid.UUID) ([]dto.UserSetting, error)
+	FindSettingByUserIds(userIds []uuid.UUID, settingType string) ([]dto.UserSetting, error)
 	UpdateBulkUserSetting(bulk []data.BulkUpdateOne) error
 	UpdateUserSetting(filter interface{}, data interface{}) error
 	UpdateUserSettingById(data *dto.UserSetting) error

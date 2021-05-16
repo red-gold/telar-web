@@ -24,8 +24,8 @@ import (
 
 const profileFetchTimeout = time.Second * 5
 
-// checkSignup check for user signup in the case user does not exist in user auth
-func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
+// checkOAuthSignup check for user oauth signup in the case user does not exist in user auth
+func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *string, db interface{}) error {
 
 	if model.profile.Name == "" {
 		fmt.Println("[ERROR]: OAuth provide - name can not be empty")
@@ -108,27 +108,51 @@ func checkSignup(accessToken string, model *TokenModel, db interface{}) error {
 		}
 	} else {
 
-		foundUserProfile, errProfile := getUserProfileByID(userAuth.ObjectId)
-		if errProfile != nil {
-			fmt.Printf("\n User profile  %s\n", errProfile.Error())
-			return errProfile
-		}
-		if foundUserProfile == nil {
-			fmt.Printf("\n Could not find user  %s\n", foundUserProfile.ObjectId)
-			return fmt.Errorf("Could not find user %s", foundUserProfile.ObjectId)
+		profileChannel := readProfileAsync(userAuth.ObjectId)
+		langChannel := readLanguageSettingAsync(userAuth.ObjectId, &UserInfoInReq{
+			UserId:      userAuth.ObjectId,
+			Username:    userAuth.Username,
+			Avatar:      "",
+			DisplayName: "",
+			SystemRole:  userAuth.Role,
+		})
 
+		profileResult, langResult := <-profileChannel, <-langChannel
+		if profileResult.Error != nil || profileResult.Profile == nil {
+			if profileResult.Error != nil {
+				fmt.Printf("\n User profile  %s\n", profileResult.Error.Error())
+			}
+			fmt.Println("\n Could not find user profile", userAuth.ObjectId)
+			return fmt.Errorf("Could not find user profile %s", userAuth.ObjectId)
+		}
+
+		*currentUserLang = "en"
+		langSettigPath := getSettingPath(userAuth.ObjectId, "lang", "current")
+		if val, ok := langResult.settings[langSettigPath]; ok && val != "" {
+			*currentUserLang = val
+		} else {
+			go func() {
+				userInfoReq := &UserInfoInReq{
+					UserId:      userAuth.ObjectId,
+					Username:    userAuth.Username,
+					Avatar:      profileResult.Profile.Avatar,
+					DisplayName: profileResult.Profile.FullName,
+					SystemRole:  userAuth.Role,
+				}
+				createDefaultLangSetting(userInfoReq)
+			}()
 		}
 
 		model.profile.ID = userAuth.ObjectId.String()
-		model.profile.Email = foundUserProfile.Email
-		model.profile.Name = foundUserProfile.FullName
-		model.profile.Avatar = foundUserProfile.Avatar
+		model.profile.Email = profileResult.Profile.Email
+		model.profile.Name = profileResult.Profile.FullName
+		model.profile.Avatar = profileResult.Profile.Avatar
 		model.claim = UserClaim{
-			DisplayName: foundUserProfile.FullName,
-			Email:       foundUserProfile.Email,
+			DisplayName: profileResult.Profile.FullName,
+			Email:       profileResult.Profile.Email,
 			UserId:      userAuth.ObjectId.String(),
 			Role:        userAuth.Role,
-			Avatar:      foundUserProfile.Avatar,
+			Avatar:      profileResult.Profile.Avatar,
 		}
 
 	}
@@ -293,8 +317,8 @@ func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, 
 			}, nil
 		}
 		model.profile = profile
-
-		signupErr := checkSignup(token.AccessToken, &model, db)
+		var currentUserLang string
+		signupErr := checkOAuthSignup(token.AccessToken, &model, &currentUserLang, db)
 		if signupErr != nil {
 			log.Printf("Error signup: %s", signupErr.Error())
 			return handler.Response{
@@ -312,6 +336,9 @@ func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, 
 		}
 
 		writeSessionOnCookie(w, session, config)
+
+		// Write user language on cookie
+		writeUserLangOnCookie(w, currentUserLang)
 
 		log.Printf("SetCookie done, redirect to: %s", reqQuery)
 
