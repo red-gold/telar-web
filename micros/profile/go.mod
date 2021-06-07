@@ -8,6 +8,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.11.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/red-gold/telar-core v0.1.12
-	github.com/red-gold/telar-web v0.1.62
+	github.com/red-gold/telar-web v0.1.64
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )

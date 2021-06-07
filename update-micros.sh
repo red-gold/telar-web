@@ -41,7 +41,7 @@ do
 echo -e "$BYellow"
 microPath="$DIR/micros/$i"
 echo "Updating [telar-web] module in $microPath"
-cd "$microPath" && go get github.com/red-gold/telar-web@v0.1.62 && go mod tidy
+cd "$microPath" && go get github.com/red-gold/telar-web@v0.1.64 && go mod tidy
 echo "[telar-web] module updated for $i"
 done
 echo -e "$Black"

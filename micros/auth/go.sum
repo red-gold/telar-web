@@ -394,8 +394,8 @@ github.com/quasilyte/regex/syntax v0.0.0-20200407221936-30656e2c4a95/go.mod h1:r
 github.com/red-gold/telar-core v0.1.10/go.mod h1:JdeL5OLMsNUspxjoxM4b7DDmiEDHj9MRZuuw8QO8ui4=
 github.com/red-gold/telar-core v0.1.12 h1:PNe6BATqaywY7FSjHTEhTv2wEx0qGpNTtbSGgNooI/M=
 github.com/red-gold/telar-core v0.1.12/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
-github.com/red-gold/telar-web v0.1.62 h1:9uSsVtBf29Azhhcmfh+uJn4TQwVjXTt+mzqZpF44Ejo=
-github.com/red-gold/telar-web v0.1.62/go.mod h1:D3qFm5+cU5XWmlmRbms2LfkXgnM4sy4EJmeOTlYsyFg=
+github.com/red-gold/telar-web v0.1.64 h1:GqerX+5I1KXn/GcJvjiObH2Ufc8yx345+Cm8imUXs+8=
+github.com/red-gold/telar-web v0.1.64/go.mod h1:D3qFm5+cU5XWmlmRbms2LfkXgnM4sy4EJmeOTlYsyFg=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
