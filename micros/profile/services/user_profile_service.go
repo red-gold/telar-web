@@ -230,3 +230,31 @@ func (s UserProfileServiceImpl) CreateUserProfileIndex(indexes map[string]interf
 	result := <-s.UserProfileRepo.CreateIndex(userProfileCollectionName, indexes)
 	return result
 }
+
+// Increment increment a profile field
+func (s UserProfileServiceImpl) Increment(objectId uuid.UUID, field string, value int) error {
+
+	filter := struct {
+		ObjectId uuid.UUID `json:"objectId" bson:"objectId"`
+	}{
+		ObjectId: objectId,
+	}
+
+	data := make(map[string]interface{})
+	data[field] = value
+
+	incOperator := coreData.IncrementOperator{
+		Inc: data,
+	}
+	return s.UpdateUserProfile(filter, incOperator)
+}
+
+// IncreaseFollowCount increment follow count of post
+func (s UserProfileServiceImpl) IncreaseFollowCount(objectId uuid.UUID, inc int) error {
+	return s.Increment(objectId, "followCount", inc)
+}
+
+// IncreaseFollowerCount increment follower count of post
+func (s UserProfileServiceImpl) IncreaseFollowerCount(objectId uuid.UUID, inc int) error {
+	return s.Increment(objectId, "followerCount", inc)
+}

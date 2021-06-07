@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/gofiber/fiber/v2"
+	"github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
 	models "github.com/red-gold/telar-web/micros/auth/models"
@@ -14,53 +15,54 @@ import (
 )
 
 // UpdateProfileHandle a function invocation
-func UpdateProfileHandle(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func UpdateProfileHandle(c *fiber.Ctx) error {
 
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		authConfig := &cf.AuthConfig
+	authConfig := &cf.AuthConfig
 
-		model := models.ProfileUpdateModel{}
-		unmarshalErr := json.Unmarshal(req.Body, &model)
-		if unmarshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while un-marshaling ProfileUpdateModel: %s",
-				unmarshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("marshalProfileUpdateModelError", errorMessage)},
-				unmarshalErr
+	model := new(models.ProfileUpdateModel)
+	unmarshalErr := c.BodyParser(model)
+	if unmarshalErr != nil {
+		errorMessage := fmt.Sprintf("Error while un-marshaling ProfileUpdateModel: %s",
+			unmarshalErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/marshalProfileUpdateModelError", "Can not parse ProfileUpdateModel!"))
 
-		}
-
-		err := updateUserProfile(&model, req.UserID, req.Username, req.Avatar, req.DisplayName, req.SystemRole)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-		tokenModel := &TokenModel{
-			token:            ProviderAccessToken{},
-			oauthProvider:    nil,
-			providerName:     "telar",
-			profile:          &provider.Profile{Name: model.FullName, ID: req.UserID.String(), Login: req.Username},
-			organizationList: "Red Gold",
-			claim: UserClaim{
-				DisplayName: model.FullName,
-				Email:       req.Username,
-				Avatar:      model.Avatar,
-				UserId:      req.UserID.String()},
-		}
-		session, err := createToken(tokenModel)
-		if err != nil {
-			fmt.Printf("{error: 'Error creating session: %s'}", err.Error())
-			return handler.Response{
-				Body:       []byte("{error: 'Internal server error creating JWT'}"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-
-		// Write session on cookie
-		writeSessionOnCookie(w, session, authConfig)
-		fmt.Printf("\nSession is created: %s \n", session)
-		return handler.Response{
-			Body:       []byte("{status: true}"),
-			StatusCode: http.StatusOK,
-		}, nil
 	}
+
+	currentUser, ok := c.Locals(types.UserCtxName).(types.UserContext)
+	if !ok {
+		log.Error("[UpdateProfileHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+	err := updateUserProfile(model, currentUser.UserID, currentUser.Username, currentUser.Avatar, currentUser.DisplayName, currentUser.SystemRole)
+	if err != nil {
+		log.Error("Can not update user profile %s ", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/updateUserProfile", "Can not update user profile!"))
+
+	}
+
+	tokenModel := &TokenModel{
+		token:            ProviderAccessToken{},
+		oauthProvider:    nil,
+		providerName:     "telar",
+		profile:          &provider.Profile{Name: model.FullName, ID: currentUser.UserID.String(), Login: currentUser.Username},
+		organizationList: *config.AppConfig.OrgName,
+		claim: UserClaim{
+			DisplayName: model.FullName,
+			Email:       currentUser.Username,
+			Avatar:      model.Avatar,
+			UserId:      currentUser.UserID.String()},
+	}
+	session, err := createToken(tokenModel)
+	if err != nil {
+		log.Error("Error creating session: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token!"))
+	}
+
+	// Write session on cookie
+	writeSessionOnCookie(c, session, authConfig)
+	log.Info("\nSession is created: %s \n", session)
+	return c.SendStatus(http.StatusOK)
 
 }

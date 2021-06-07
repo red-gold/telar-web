@@ -4,72 +4,84 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/notifications/database"
 	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
 
 // DeleteNotificationHandle handle delete a Notification
-func DeleteNotificationHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func DeleteNotificationHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-
-		// params from /notifications/id/:notificationId
-		notificationId := req.GetParamByName("notificationId")
-		if notificationId == "" {
-			errorMessage := fmt.Sprintf("Notification Id is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("notificationIdRequired", errorMessage)}, nil
-		}
-		fmt.Printf("\n Notification ID: %s", notificationId)
-		notificationUUID, uuidErr := uuid.FromString(notificationId)
-		if uuidErr != nil {
-			errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("uuidError", errorMessage)}, nil
-		}
-		fmt.Printf("\n Notification UUID: %s", notificationUUID)
-		// Create service
-		notificationService, serviceErr := service.NewNotificationService(db)
-		if serviceErr != nil {
-			errorMessage := fmt.Sprintf("Notification Service Error %s", serviceErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("notificationServiceError", errorMessage)}, nil
-
-		}
-
-		if err := notificationService.DeleteNotificationByOwner(req.UserID, notificationUUID); err != nil {
-			errorMessage := fmt.Sprintf("Delete Notification Error %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("deleteNotificationError", errorMessage)}, nil
-
-		}
-		return handler.Response{
-			Body:       []byte(`{"success": true}`),
-			StatusCode: http.StatusOK,
-		}, nil
+	// params from /notifications/id/:notificationId
+	notificationId := c.Params("notificationId")
+	if notificationId == "" {
+		errorMessage := fmt.Sprintf("Notification Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("notificationIdRequired", "Notification id is required!"))
 	}
+
+	notificationUUID, uuidErr := uuid.FromString(notificationId)
+	if uuidErr != nil {
+		errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseUUID", "Can not parse UUID!"))
+	}
+
+	// Create service
+	notificationService, serviceErr := service.NewNotificationService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("Notification Service Error %s", serviceErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("notificationService", "Error happened while creating service!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[DeleteNotificationHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	if err := notificationService.DeleteNotificationByOwner(currentUser.UserID, notificationUUID); err != nil {
+		errorMessage := fmt.Sprintf("Delete Notification Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("deleteNotification", "Error happened while removing notification!"))
+
+	}
+
+	return c.SendStatus(http.StatusOK)
+
 }
 
 // DeleteNotificationByUserIdHandle handle delete a Notification but userId
-func DeleteNotificationByUserIdHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func DeleteNotificationByUserIdHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
+	// Create service
+	notificationService, serviceErr := service.NewNotificationService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("Notification Service Error %s", serviceErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("notificationService", "Error happened while creating service!"))
 
-		// Create service
-		notificationService, serviceErr := service.NewNotificationService(db)
-		if serviceErr != nil {
-			errorMessage := fmt.Sprintf("Notification Service Error %s", serviceErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("NotificationServiceError", errorMessage)}, nil
-
-		}
-
-		if err := notificationService.DeleteNotificationsByUserId(req.UserID); err != nil {
-			errorMessage := fmt.Sprintf("Delete Notification Error %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("deleteNotificationError", errorMessage)}, nil
-		}
-
-		return handler.Response{
-			Body:       []byte(`{"success": true}`),
-			StatusCode: http.StatusOK,
-		}, nil
 	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[DeleteNotificationByUserIdHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	if err := notificationService.DeleteNotificationsByUserId(currentUser.UserID); err != nil {
+		errorMessage := fmt.Sprintf("Delete Notification Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("deleteNotification", "Error happened while removing notification!"))
+	}
+
+	return c.SendStatus(http.StatusOK)
+
 }

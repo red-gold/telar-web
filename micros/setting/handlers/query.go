@@ -1,285 +1,227 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
 	"github.com/red-gold/telar-core/pkg/log"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/parser"
+	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/setting/database"
 	models "github.com/red-gold/telar-web/micros/setting/models"
 	service "github.com/red-gold/telar-web/micros/setting/services"
 )
 
+type UserSettingQueryModel struct {
+	Search string    `query:"search"`
+	Page   int64     `query:"page"`
+	Owner  uuid.UUID `query:"owner"`
+	Type   int       `query:"type"`
+}
+
 // QueryUserSettingHandle handle quey on userSetting
-func QueryUserSettingHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func QueryUserSettingHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		userSettingService, serviceErr := service.NewUserSettingService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
+	query := new(UserSettingQueryModel)
 
-		var query *url.Values
-		if len(req.QueryString) > 0 {
-			q, err := url.ParseQuery(string(req.QueryString))
-			if err != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, err
-			}
-			query = &q
-		}
-		searchParam := query.Get("search")
-		pageParam := query.Get("page")
-		ownerUserIdParam := query.Get("owner")
-		userSettingTypeIdParam := query.Get("type")
-
-		var ownerUserId *uuid.UUID = nil
-		if ownerUserIdParam != "" {
-
-			parsedUUID, uuidErr := uuid.FromString(ownerUserIdParam)
-
-			if uuidErr != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, uuidErr
-			}
-
-			ownerUserId = &parsedUUID
-		}
-
-		var userSettingTypeId *int = nil
-		if userSettingTypeIdParam != "" {
-
-			parsedType, strErr := strconv.Atoi(userSettingTypeIdParam)
-			if strErr != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, strErr
-			}
-			userSettingTypeId = &parsedType
-		}
-		page := 0
-		if pageParam != "" {
-			var strErr error
-			page, strErr = strconv.Atoi(pageParam)
-			if strErr != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, strErr
-			}
-		}
-		userSettingList, err := userSettingService.QueryUserSetting(searchParam, ownerUserId, userSettingTypeId, "created_date", int64(page))
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		body, marshalErr := json.Marshal(userSettingList)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling userSettingList: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userSettingListMarshalError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	if err := parser.QueryParser(c, query); err != nil {
+		log.Error("[QueryUserSettingHandle] QueryParser %s", err.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("queryParser", "Error happened while parsing query!"))
 	}
+
+	// Create service
+	userSettingService, serviceErr := service.NewUserSettingService(database.Db)
+	if serviceErr != nil {
+		log.Error("[NewUserSettingService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userSettingService", "Error happened while creating userSettingService!"))
+	}
+
+	userSettingList, err := userSettingService.QueryUserSetting(query.Search, &query.Owner, &query.Type, "created_date", query.Page)
+	if err != nil {
+		log.Error("[QueryUserSetting] %s ", err.Error())
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("queryUserSetting", "Can not query user setting!"))
+	}
+
+	return c.JSON(userSettingList)
+
 }
 
 // GetAllUserSetting handle get all userSetting
-func GetAllUserSetting(db interface{}) func(server.Request) (handler.Response, error) {
+func GetAllUserSetting(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		userSettingService, serviceErr := service.NewUserSettingService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		userSettingList, err := userSettingService.GetAllUserSetting(req.UserID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		groupSettingsMap := make(map[string][]models.GetSettingGroupItemModel)
-		for _, setting := range userSettingList {
-
-			settingModel := models.GetSettingGroupItemModel{
-				ObjectId: setting.ObjectId,
-				Name:     setting.Name,
-				Value:    setting.Value,
-				IsSystem: setting.IsSystem,
-			}
-			groupSettingsMap[setting.Type] = append(groupSettingsMap[setting.Type], settingModel)
-		}
-
-		body, marshalErr := json.Marshal(groupSettingsMap)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling userSettingList: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userSettingListMarshalError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	userSettingService, serviceErr := service.NewUserSettingService(database.Db)
+	if serviceErr != nil {
+		log.Error("[NewUserSettingService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userSettingService", "Error happened while creating userSettingService!"))
 	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetAllUserSetting] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	userSettingList, err := userSettingService.GetAllUserSetting(currentUser.UserID)
+	if err != nil {
+		log.Error("[GetAllUserSetting] %s ", err.Error())
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("getAllUserSetting", "Can not get user settings!"))
+	}
+
+	groupSettingsMap := make(map[string][]models.GetSettingGroupItemModel)
+	for _, setting := range userSettingList {
+
+		settingModel := models.GetSettingGroupItemModel{
+			ObjectId: setting.ObjectId,
+			Name:     setting.Name,
+			Value:    setting.Value,
+			IsSystem: setting.IsSystem,
+		}
+		groupSettingsMap[setting.Type] = append(groupSettingsMap[setting.Type], settingModel)
+	}
+
+	return c.JSON(groupSettingsMap)
+
 }
 
 // GetAllUserSettingByType handle get all userSetting
-func GetAllUserSettingByType(db interface{}) func(server.Request) (handler.Response, error) {
+func GetAllUserSettingByType(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		userSettingService, serviceErr := service.NewUserSettingService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		settingType := req.GetParamByName("type")
-		if settingType == "" {
-			errorMessage := fmt.Sprintf("Error setting type can not be empty.")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("settingTypeEmptyError", errorMessage)}, nil
-		}
-		userSettingList, err := userSettingService.GetAllUserSettingByType(req.UserID, settingType)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		var groupSettingItems []models.GetSettingGroupItemModel
-		for _, setting := range userSettingList {
-
-			settingModel := models.GetSettingGroupItemModel{
-				ObjectId: setting.ObjectId,
-				Name:     setting.Name,
-				Value:    setting.Value,
-				IsSystem: setting.IsSystem,
-			}
-			groupSettingItems = append(groupSettingItems, settingModel)
-		}
-		groupSettingsModel := models.GetSettingGroupModel{
-			Type:        settingType,
-			CreatedDate: userSettingList[0].CreatedDate,
-			OwnerUserId: req.UserID,
-			List:        groupSettingItems,
-		}
-
-		body, marshalErr := json.Marshal(groupSettingsModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling userSettingList: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userSettingListMarshalError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	userSettingService, serviceErr := service.NewUserSettingService(database.Db)
+	if serviceErr != nil {
+		log.Error("[NewUserSettingService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userSettingService", "Error happened while creating userSettingService!"))
 	}
+
+	settingType := c.Params("type")
+	if settingType == "" {
+		errorMessage := fmt.Sprintf("Error setting type can not be empty.")
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("settingTypeRquired", "Error setting type can not be empty.!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetAllUserSettingByType] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	userSettingList, err := userSettingService.GetAllUserSettingByType(currentUser.UserID, settingType)
+	if err != nil {
+		log.Error("[GetAllUserSettingByType] %s ", err.Error())
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("getAllUserSettingByType", "Can not get user settings by type!"))
+	}
+
+	var groupSettingItems []models.GetSettingGroupItemModel
+	for _, setting := range userSettingList {
+
+		settingModel := models.GetSettingGroupItemModel{
+			ObjectId: setting.ObjectId,
+			Name:     setting.Name,
+			Value:    setting.Value,
+			IsSystem: setting.IsSystem,
+		}
+		groupSettingItems = append(groupSettingItems, settingModel)
+	}
+	groupSettingsModel := models.GetSettingGroupModel{
+		Type:        settingType,
+		CreatedDate: userSettingList[0].CreatedDate,
+		OwnerUserId: currentUser.UserID,
+		List:        groupSettingItems,
+	}
+
+	return c.JSON(groupSettingsModel)
+
 }
 
 // GetUserSettingHandle handle get userSetting
-func GetUserSettingHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func GetUserSettingHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		userSettingService, serviceErr := service.NewUserSettingService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-		userSettingId := req.GetParamByName("userSettingId")
-		userSettingUUID, uuidErr := uuid.FromString(userSettingId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("parseUUIDError", "Can not parse userSetting id!")},
-				nil
-		}
-
-		foundUserSetting, err := userSettingService.FindById(userSettingUUID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		userSettingModel := models.UserSettingModel{
-			ObjectId:    foundUserSetting.ObjectId,
-			OwnerUserId: req.UserID,
-			CreatedDate: foundUserSetting.CreatedDate,
-			Name:        foundUserSetting.Name,
-			Value:       foundUserSetting.Value,
-			Type:        foundUserSetting.Type,
-			IsSystem:    foundUserSetting.IsSystem,
-		}
-
-		body, marshalErr := json.Marshal(userSettingModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("{error: 'Error while marshaling userSettingModel: %s'}",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	userSettingService, serviceErr := service.NewUserSettingService(database.Db)
+	if serviceErr != nil {
+		log.Error("[NewUserSettingService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userSettingService", "Error happened while creating userSettingService!"))
 	}
+
+	userSettingId := c.Params("userSettingId")
+	userSettingUUID, uuidErr := uuid.FromString(userSettingId)
+	if uuidErr != nil {
+		log.Error("Can not parse userSetting id! %s", uuidErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseUUIDError", "Can not parse userSetting id!"))
+	}
+
+	foundUserSetting, err := userSettingService.FindById(userSettingUUID)
+	if err != nil {
+		log.Error("[userSettingService.FindById] %s ", err.Error())
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserSetting", "Can not find user settings by id!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetUserSettingHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	userSettingModel := models.UserSettingModel{
+		ObjectId:    foundUserSetting.ObjectId,
+		OwnerUserId: currentUser.UserID,
+		CreatedDate: foundUserSetting.CreatedDate,
+		Name:        foundUserSetting.Name,
+		Value:       foundUserSetting.Value,
+		Type:        foundUserSetting.Type,
+		IsSystem:    foundUserSetting.IsSystem,
+	}
+
+	return c.JSON(userSettingModel)
+
 }
 
 // GetSettingByUserIds a function invocation to setting by user ids
-func GetSettingByUserIds(db interface{}) func(server.Request) (handler.Response, error) {
-	return func(req server.Request) (handler.Response, error) {
+func GetSettingByUserIds(c *fiber.Ctx) error {
 
-		// Parse model object
-		var model models.GetSettingsModel
-		if err := json.Unmarshal(req.Body, &model); err != nil {
-			errorMessage := fmt.Sprintf("Unmarshal  models.GetProfilesModel array %s", err.Error())
-			log.Error(errorMessage)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("getProfilesModelMarshalError", errorMessage)}, nil
-		}
-
-		if !(len(model.UserIds) > 0) {
-			log.Error("model.UserIds is empty ")
-			return handler.Response{StatusCode: http.StatusInternalServerError}, nil
-
-		}
-
-		// Create service
-		userSettingService, serviceErr := service.NewUserSettingService(db)
-		if serviceErr != nil {
-			log.Error("Create user service  %s", serviceErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUserSetting, err := userSettingService.FindSettingByUserIds(model.UserIds, model.Type)
-		if err != nil {
-			log.Error("Find setting by user ids  %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		mappedSetting := make(map[string]string)
-		for _, setting := range foundUserSetting {
-			key := fmt.Sprintf("%s:%s:%s", setting.OwnerUserId, setting.Type, setting.Name)
-			mappedSetting[key] = setting.Value
-		}
-
-		body, marshalErr := json.Marshal(mappedSetting)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling mappedSetting: %s",
-				marshalErr.Error())
-			log.Error(errorMessage)
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("marshalUserProfilesError", errorMessage)},
-				marshalErr
-
-		}
-
-		return handler.Response{
-			Body:       body,
-			StatusCode: http.StatusOK,
-		}, nil
+	// Parse model object
+	model := new(models.GetSettingsModel)
+	if err := c.BodyParser(model); err != nil {
+		errorMessage := fmt.Sprintf("Unmarshal  models.GetProfilesModel array %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("profilesModelParser",
+			"Can not parse model!"))
 	}
+
+	if !(len(model.UserIds) > 0) {
+		log.Error("model.UserIds is empty ")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdRequired",
+			"User id is required!"))
+
+	}
+
+	// Create service
+	userSettingService, serviceErr := service.NewUserSettingService(database.Db)
+	if serviceErr != nil {
+		log.Error("[NewUserSettingService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userSettingService", "Error happened while creating userSettingService!"))
+	}
+
+	foundUserSetting, err := userSettingService.FindSettingByUserIds(model.UserIds, model.Type)
+	if err != nil {
+		log.Error("[userSettingService.FindSettingByUserIds] %s ", err.Error())
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserSetting", "Can not find users settings by ids!"))
+	}
+
+	mappedSetting := make(map[string]string)
+	for _, setting := range foundUserSetting {
+		key := fmt.Sprintf("%s:%s:%s", setting.OwnerUserId, setting.Type, setting.Name)
+		mappedSetting[key] = setting.Value
+	}
+
+	return c.JSON(mappedSetting)
+
 }

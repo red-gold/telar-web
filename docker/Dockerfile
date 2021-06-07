@@ -20,7 +20,10 @@ WORKDIR /go/src/handler
 COPY docker/main/go.mod go.mod
 COPY docker/main/main.go main.go
 COPY docker/main/GO_REPLACE.txt GO_REPLACE.txt
+# Add Telar Core if exist
 COPY *docker/telar-core function/telar-core
+COPY *docker/adaptor function/adaptor
+
 RUN  sed -i "s|__micro_name|$MICRONAME|g" main.go
 RUN  sed -i "s|__micro_name|$MICRONAME|g" GO_REPLACE.txt
 

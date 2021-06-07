@@ -2,57 +2,62 @@ package function
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
-	coreServer "github.com/red-gold/telar-core/server"
+	"github.com/gofiber/adaptor/v2"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/pkg/log"
 	micros "github.com/red-gold/telar-web/micros"
-	"github.com/red-gold/telar-web/micros/profile/handlers"
+	"github.com/red-gold/telar-web/micros/profile/database"
+	"github.com/red-gold/telar-web/micros/profile/router"
 )
+
+// Cache state
+var app *fiber.App
 
 func init() {
 
 	micros.InitConfig()
-}
 
-// Cache state
-var server *coreServer.ServerRouter
-var db interface{}
+	// Initialize app
+
+	app = fiber.New()
+	app.Use(recover.New())
+	app.Use(requestid.New())
+	app.Use(logger.New(
+		logger.Config{
+			Format: "[${time}] ${status} - ${latency} ${method} ${path} - ${header:}\n​",
+		},
+	))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     *config.AppConfig.Origin,
+		AllowCredentials: true,
+		AllowHeaders:     "Origin, Content-Type, Accept, Access-Control-Allow-Headers, X-Requested-With, X-HTTP-Method-Override, access-control-allow-origin, access-control-allow-headers",
+	}))
+	router.SetupRoutes(app)
+}
 
 // Handler function
 func Handle(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Start
-	if db == nil {
+	// Connect
+	if database.Db == nil {
 		var startErr error
-
-		db, startErr = micros.Start(ctx)
-
+		startErr = database.Connect(ctx)
 		if startErr != nil {
-			fmt.Printf("Error startup: %s", startErr.Error())
+			log.Error("Error startup: %s", startErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(startErr.Error()))
 		}
 	}
 
-	// Server Routing
-	if server == nil {
-		fmt.Println("Server is nil")
-		server = coreServer.NewServerRouter()
-		server.GET("/my", handlers.ReadMyProfileHandle(db), coreServer.RouteProtectionCookie)
-		server.GETWR("/", handlers.QueryUserProfileHandle(db), coreServer.RouteProtectionCookie)
-		server.GET("/id/:userId", handlers.ReadProfileHandle(db), coreServer.RouteProtectionCookie)
-		server.POST("/index", handlers.InitProfileIndexHandle(db), coreServer.RouteProtectionHMAC)
-		server.PUT("/last-seen", handlers.UpdateLastSeen(db), coreServer.RouteProtectionHMAC)
+	adaptor.FiberApp(app)(w, r)
 
-		// Invoke between functions and protected by HMAC
-		server.PUTWR("/", handlers.UpdateProfileHandle(db), coreServer.RouteProtectionHMAC)
-		server.GET("/dto/id/:userId", handlers.ReadDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
-		server.POST("/dto", handlers.CreateDtoProfileHandle(db), coreServer.RouteProtectionHMAC)
-		server.POST("/dispatch", handlers.DispatchProfilesHandle(db), coreServer.RouteProtectionHMAC)
-		server.POST("/dto/ids", handlers.GetProfileByIds(db), coreServer.RouteProtectionHMAC)
-	}
-	server.ServeHTTP(w, r)
 }

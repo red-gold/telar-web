@@ -2,50 +2,61 @@ package function
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
-	coreServer "github.com/red-gold/telar-core/server"
+	"github.com/gofiber/adaptor/v2"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	coreConfig "github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/pkg/log"
 	micros "github.com/red-gold/telar-web/micros"
 	"github.com/red-gold/telar-web/micros/actions/config"
-	"github.com/red-gold/telar-web/micros/actions/handlers"
+	"github.com/red-gold/telar-web/micros/actions/database"
+	"github.com/red-gold/telar-web/micros/actions/router"
 )
+
+// Cache state
+var app *fiber.App
 
 func init() {
 	config.InitConfig()
 	micros.InitConfig()
-}
 
-// Cache state
-var server *coreServer.ServerRouter
-var db interface{}
+	// Initialize app
+	app = fiber.New()
+	app.Use(recover.New())
+	app.Use(requestid.New())
+	app.Use(logger.New(
+		logger.Config{
+			Format: "[${time}] ${status} - ${latency} ${method} ${path} - ${header:}\n​",
+		},
+	))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     *coreConfig.AppConfig.Origin,
+		AllowCredentials: true,
+		AllowHeaders:     "Origin, Content-Type, Accept, Access-Control-Allow-Headers, X-Requested-With, X-HTTP-Method-Override, access-control-allow-origin, access-control-allow-headers",
+	}))
+	router.SetupRoutes(app)
+}
 
 // Handler function
 func Handle(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Start
-	if db == nil {
+	// Connect
+	if database.Db == nil {
 		var startErr error
-		db, startErr = micros.Start(ctx)
+		startErr = database.Connect(ctx)
 		if startErr != nil {
-			fmt.Printf("Error startup: %s", startErr.Error())
+			log.Error("Error startup: %s", startErr.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(startErr.Error()))
 		}
 	}
 
-	// Server Routing
-	if server == nil {
-		server = coreServer.NewServerRouter()
-		server.POST("/room", handlers.CreateActionRoomHandle(db), coreServer.RouteProtectionHMAC)
-		server.POST("/dispatch/:roomId", handlers.DispatchHandle(db), coreServer.RouteProtectionHMAC)
-		server.PUT("/room", handlers.UpdateActionRoomHandle(db), coreServer.RouteProtectionCookie)
-		server.PUT("/room/access-key", handlers.SetAccessKeyHandle(db), coreServer.RouteProtectionCookie)
-		server.DELETE("/room/:roomId", handlers.DeleteActionRoomHandle(db), coreServer.RouteProtectionHMAC)
-		server.GET("/room/access-key", handlers.GetAccessKeyHandle(db), coreServer.RouteProtectionCookie)
-		server.POST("/room/verify", handlers.VerifyAccessKeyHandle(db), coreServer.RouteProtectionCookie)
-	}
-	server.ServeHTTP(w, r)
+	adaptor.FiberApp(app)(w, r)
 }

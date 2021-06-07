@@ -19,4 +19,6 @@ type UserProfileService interface {
 	DeleteManyUserProfile(filter interface{}) error
 	FindByUsername(username string) (*dto.UserProfile, error)
 	CreateUserProfileIndex(indexes map[string]interface{}) error
+	IncreaseFollowCount(objectId uuid.UUID, inc int) error
+	IncreaseFollowerCount(objectId uuid.UUID, inc int) error
 }

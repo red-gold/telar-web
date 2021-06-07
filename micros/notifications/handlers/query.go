@@ -1,116 +1,104 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/notifications/database"
 	models "github.com/red-gold/telar-web/micros/notifications/models"
 	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
 
 // GetNotificationsByUserIdHandle handle query on notification
-func GetNotificationsByUserIdHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		notificationService, serviceErr := service.NewNotificationService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		var query *url.Values
-		if len(req.QueryString) > 0 {
-			q, err := url.ParseQuery(string(req.QueryString))
-			if err != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, err
-			}
-			query = &q
-		}
-		pageParam := query.Get("page")
-
-		page := 0
-		if pageParam != "" {
-			var strErr error
-			page, strErr = strconv.Atoi(pageParam)
-			if strErr != nil {
-				return handler.Response{StatusCode: http.StatusInternalServerError}, strErr
-			}
-		}
-
-		notificationList, err := notificationService.GetNotificationByUserId(&req.UserID, "created_date", int64(page))
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		body, marshalErr := json.Marshal(notificationList)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling notificationList: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("notificationListMarshalError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	notificationService, serviceErr := service.NewNotificationService(database.Db)
+	if serviceErr != nil {
+		log.Error("[GetNotificationsByUserIdHandle.NewNotificationService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/notificationService", "Error happened while creating notificationService!"))
 	}
+
+	pageParam := c.Query("page")
+
+	page := 0
+	if pageParam != "" {
+		var strErr error
+		page, strErr = strconv.Atoi(pageParam)
+		if strErr != nil {
+			log.Error("[GetNotificationsByUserIdHandle.strconv.Atoi] %s", strErr.Error())
+			return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal", "Error happened while parsing page!"))
+		}
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetNotificationsByUserIdHandle] Can not get current user")
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	notificationList, err := notificationService.GetNotificationByUserId(&currentUser.UserID, "created_date", int64(page))
+	if err != nil {
+		log.Error("[GetNotificationsByUserIdHandle.GetNotificationByUserId] %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getNotificationByUserId", "Error happened while reading notification!"))
+	}
+
+	return c.JSON(notificationList)
+
 }
 
 // GetNotificationHandle handle get a notification
-func GetNotificationHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func GetNotificationHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		notificationService, serviceErr := service.NewNotificationService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-		notificationId := req.GetParamByName("notificationId")
-		notificationUUID, uuidErr := uuid.FromString(notificationId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("parseUUIDError", "Can not parse notification id!")},
-				nil
-		}
-
-		foundNotification, err := notificationService.FindById(notificationUUID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		notificationModel := models.NotificationModel{
-			ObjectId:             foundNotification.ObjectId,
-			OwnerUserId:          req.UserID,
-			OwnerDisplayName:     req.DisplayName,
-			OwnerAvatar:          req.Avatar,
-			Description:          foundNotification.Description,
-			URL:                  foundNotification.URL,
-			NotifyRecieverUserId: foundNotification.NotifyRecieverUserId,
-			TargetId:             foundNotification.TargetId,
-			IsSeen:               foundNotification.IsSeen,
-			Type:                 foundNotification.Type,
-			EmailNotification:    foundNotification.EmailNotification,
-		}
-
-		body, marshalErr := json.Marshal(notificationModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("{error: 'Error while marshaling notificationModel: %s'}",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	notificationService, serviceErr := service.NewNotificationService(database.Db)
+	if serviceErr != nil {
+		log.Error("[GetNotificationHandle.NewNotificationService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/notificationService", "Error happened while creating notificationService!"))
 	}
+	notificationId := c.Params("notificationId")
+	notificationUUID, uuidErr := uuid.FromString(notificationId)
+	if uuidErr != nil {
+		errorMessage := fmt.Sprintf("Notification Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("notificationIdRequired", "Notification id is required!"))
+
+	}
+
+	foundNotification, err := notificationService.FindById(notificationUUID)
+	if err != nil {
+		log.Error("[GetNotificationHandle.notificationService.FindById] %s - %s", notificationUUID.String(), serviceErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findNotification", "Error happened while finding notification!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetNotificationHandle] Can not get current user")
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	notificationModel := models.NotificationModel{
+		ObjectId:             foundNotification.ObjectId,
+		OwnerUserId:          currentUser.UserID,
+		OwnerDisplayName:     currentUser.DisplayName,
+		OwnerAvatar:          currentUser.Avatar,
+		Description:          foundNotification.Description,
+		URL:                  foundNotification.URL,
+		NotifyRecieverUserId: foundNotification.NotifyRecieverUserId,
+		TargetId:             foundNotification.TargetId,
+		IsSeen:               foundNotification.IsSeen,
+		Type:                 foundNotification.Type,
+		EmailNotification:    foundNotification.EmailNotification,
+	}
+
+	return c.JSON(notificationModel)
+
 }

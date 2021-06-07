@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
+	"github.com/red-gold/telar-web/micros/auth/database"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
 	"github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
@@ -28,7 +28,7 @@ const profileFetchTimeout = time.Second * 5
 func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *string, db interface{}) error {
 
 	if model.profile.Name == "" {
-		fmt.Println("[ERROR]: OAuth provide - name can not be empty")
+		log.Error("[ERROR]: OAuth provide - name can not be empty")
 		return fmt.Errorf("OAuth provide - name can not be empty")
 	}
 	if model.profile.Email == "" {
@@ -159,217 +159,145 @@ func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *st
 
 	return nil
 }
-func OauthGoogleCallback(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-	// Read oauthState from Cookie
-	oauthState, _ := r.Cookie("oauthstate")
-
-	if r.FormValue("state") != oauthState.Value {
-		log.Println("invalid oauth google state")
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return handler.Response{
-			Body:       []byte("Unauthorized OAuth callback."),
-			StatusCode: http.StatusUnauthorized,
-		}, nil
-	}
-
-	data, err := getUserDataFromGoogle(r.FormValue("code"))
-	if err != nil {
-		log.Println(err.Error())
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return handler.Response{
-			Body:       []byte("Unauthorized OAuth callback."),
-			StatusCode: http.StatusUnauthorized,
-		}, nil
-	}
-
-	// GetOrCreate User in your db.
-	// Redirect or response with a token.
-	// More code .....
-	fmt.Fprintf(w, "UserInfo: %s\n", data)
-	return handler.Response{
-		Body:       []byte("Cookie generated."),
-		StatusCode: http.StatusOK,
-	}, nil
-}
 
 // OAuth2Handler makes a handler for OAuth 2.0 redirects
-func OAuth2Handler(db interface{}) func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
+func OAuth2Handler(c *fiber.Ctx) error {
 
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		config := &cf.AuthConfig
-		c := &http.Client{
-			Timeout: profileFetchTimeout,
-		}
-
-		clientSecret := config.ClientSecret
-
-		if len(config.OAuthClientSecret) > 0 {
-			clientSecret = strings.TrimSpace(config.OAuthClientSecret)
-		}
-
-		log.Printf(`OAuth 2 - "%s"`, r.URL.Path)
-		if r.URL.Path != "/oauth2/authorized" {
-			return handler.Response{
-				Body:       []byte("Unauthorized OAuth callback."),
-				StatusCode: http.StatusUnauthorized,
-			}, nil
-		}
-
-		reqQuery := r.URL.Query()
-		code := reqQuery.Get("code")
-		state := reqQuery.Get("state")
-		if len(code) == 0 {
-			return handler.Response{
-				Body:       []byte("Unauthorized OAuth callback, no code parameter given."),
-				StatusCode: http.StatusUnauthorized,
-			}, nil
-		}
-		if len(state) == 0 {
-			return handler.Response{
-				Body:       []byte("Unauthorized OAuth callback, no state parameter given."),
-				StatusCode: http.StatusUnauthorized,
-			}, nil
-		}
-
-		log.Printf("Exchange: %s, for an access_token", code)
-
-		var tokenURL string
-		var oauthProvider provider.Provider
-		var redirectURI *url.URL
-
-		switch config.OAuthProvider {
-		case githubName:
-			tokenURL = "https://github.com/login/oauth/access_token"
-			oauthProvider = provider.NewGitHub(c)
-
-			break
-		case gitlabName:
-			tokenURL = fmt.Sprintf("%s/oauth/token", config.OAuthProviderBaseURL)
-			apiURL := config.OAuthProviderBaseURL + "/api/v4/"
-			oauthProvider = provider.NewGitLabProvider(c, config.OAuthProviderBaseURL, apiURL)
-
-			redirectAfterAutURL := reqQuery.Get("r")
-			redirectURI, _ = url.Parse(combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized")))
-
-			redirectURIQuery := redirectURI.Query()
-			redirectURIQuery.Set("r", redirectAfterAutURL)
-
-			redirectURI.RawQuery = redirectURIQuery.Encode()
-
-			break
-		}
-
-		u, _ := url.Parse(tokenURL)
-		q := u.Query()
-		q.Set("client_id", config.ClientID)
-		q.Set("client_secret", clientSecret)
-
-		q.Set("code", code)
-		q.Set("state", state)
-
-		if config.OAuthProvider == gitlabName {
-			q.Set("grant_type", "authorization_code")
-			q.Set("redirect_uri", redirectURI.String())
-		}
-
-		u.RawQuery = q.Encode()
-		log.Println("Posting to", u.String())
-
-		newReq, _ := http.NewRequest(http.MethodPost, u.String(), nil)
-
-		newReq.Header.Add("Accept", "application/json")
-		res, err := c.Do(newReq)
-
-		if err != nil {
-			return handler.Response{
-				Body:       []byte("Error exchanging code for access_token"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-
-		token, tokenErr := getToken(res)
-		if tokenErr != nil {
-			log.Printf(
-				"Unable to contact identity provider: %s, error: %s",
-				config.OAuthProvider,
-				tokenErr,
-			)
-
-			return handler.Response{
-				Body: []byte(fmt.Sprintf(
-					"Unable to contact identity provider: %s",
-					config.OAuthProvider,
-				)),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-
-		fmt.Printf("\nGithub Token: %v\n", token.AccessToken)
-		model := TokenModel{token: token, oauthProvider: oauthProvider, providerName: config.OAuthProvider}
-		profile, profileErr := model.oauthProvider.GetProfile(model.token.AccessToken)
-		if profileErr != nil {
-			return handler.Response{
-				Body: []byte(fmt.Sprintf(
-					"Get oath profile error: %s",
-					profileErr.Error(),
-				)),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-		model.profile = profile
-		var currentUserLang string
-		signupErr := checkOAuthSignup(token.AccessToken, &model, &currentUserLang, db)
-		if signupErr != nil {
-			log.Printf("Error signup: %s", signupErr.Error())
-			return handler.Response{
-				Body:       []byte("Internal server error signup check"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-		session, err := createOAuthSession(&model)
-		if err != nil {
-			log.Printf("Error creating session: %s", err.Error())
-			return handler.Response{
-				Body:       []byte("Internal server error creating JWT"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-
-		writeSessionOnCookie(w, session, config)
-
-		// Write user language on cookie
-		writeUserLangOnCookie(w, currentUserLang)
-
-		log.Printf("SetCookie done, redirect to: %s", reqQuery)
-
-		// Redirect to original requested resource (if specified in r=)
-		redirect := reqQuery.Get("r")
-		if len(redirect) > 0 {
-			log.Printf(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
-
-			// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
-			// http.Redirect(w, r, reqQuery.Get("r"), http.StatusTemporaryRedirect)
-
-			return handler.Response{
-				Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + redirect + `");</script></html>`),
-				StatusCode: http.StatusOK,
-				Header: map[string][]string{
-					"Content-Type": {" text/html; charset=utf-8"},
-				},
-			}, nil
-
-		}
-
-		webURL := config.ExternalRedirectDomain
-
-		return handler.Response{
-			Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + webURL + `");</script></html>`),
-			StatusCode: http.StatusOK,
-			Header: map[string][]string{
-				"Content-Type": {" text/html; charset=utf-8"},
-			},
-		}, nil
+	config := &cf.AuthConfig
+	httpClient := &http.Client{
+		Timeout: profileFetchTimeout,
 	}
+
+	clientSecret := config.ClientSecret
+
+	if len(config.OAuthClientSecret) > 0 {
+		clientSecret = strings.TrimSpace(config.OAuthClientSecret)
+	}
+
+	log.Info(`OAuth 2 - "%s"`, c.Path())
+	if c.Path() != "/oauth2/authorized" {
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("internal/oAuthPath", "Unauthorized OAuth callback."))
+	}
+
+	code := c.Query("code")
+	state := c.Query("state")
+	if len(code) == 0 {
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("internal/oAuthCode", "Unauthorized OAuth callback, no code parameter given!"))
+	}
+	if len(state) == 0 {
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("internal/oAuthState", "Unauthorized OAuth callback, no state parameter given!"))
+	}
+
+	log.Info("Exchange: %s, for an access_token", code)
+
+	var tokenURL string
+	var oauthProvider provider.Provider
+	var redirectURI *url.URL
+
+	switch config.OAuthProvider {
+	case githubName:
+		tokenURL = "https://github.com/login/oauth/access_token"
+		oauthProvider = provider.NewGitHub(httpClient)
+
+		break
+	case gitlabName:
+		tokenURL = fmt.Sprintf("%s/oauth/token", config.OAuthProviderBaseURL)
+		apiURL := config.OAuthProviderBaseURL + "/api/v4/"
+		oauthProvider = provider.NewGitLabProvider(httpClient, config.OAuthProviderBaseURL, apiURL)
+
+		redirectAfterAutURL := c.Query("r")
+		redirectURI, _ = url.Parse(combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized")))
+
+		redirectURIQuery := redirectURI.Query()
+		redirectURIQuery.Set("r", redirectAfterAutURL)
+
+		redirectURI.RawQuery = redirectURIQuery.Encode()
+
+		break
+	}
+
+	u, _ := url.Parse(tokenURL)
+	q := u.Query()
+	q.Set("client_id", config.ClientID)
+	q.Set("client_secret", clientSecret)
+
+	q.Set("code", code)
+	q.Set("state", state)
+
+	if config.OAuthProvider == gitlabName {
+		q.Set("grant_type", "authorization_code")
+		q.Set("redirect_uri", redirectURI.String())
+	}
+
+	u.RawQuery = q.Encode()
+	log.Info("Posting to %s", u.String())
+
+	newReq, _ := http.NewRequest(http.MethodPost, u.String(), nil)
+
+	newReq.Header.Add("Accept", "application/json")
+	res, err := httpClient.Do(newReq)
+
+	if err != nil {
+		log.Error("Error exchanging code for access_token %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/identityProvider", "Error exchanging code for access_token!"))
+	}
+
+	token, tokenErr := getToken(res)
+	if tokenErr != nil {
+		log.Error(
+			"Unable to contact identity provider: %s, error: %s",
+			config.OAuthProvider,
+			tokenErr,
+		)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/identityProvider", "Unable to contact identity provider!"))
+	}
+
+	fmt.Printf("\nGithub Token: %v\n", token.AccessToken)
+	model := TokenModel{token: token, oauthProvider: oauthProvider, providerName: config.OAuthProvider}
+	profile, profileErr := model.oauthProvider.GetProfile(model.token.AccessToken)
+	if profileErr != nil {
+		log.Error("Get OAuth profile %s", profileErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getOAuthProfile", "Get oath profile error!"))
+	}
+	model.profile = profile
+	var currentUserLang string
+	signupErr := checkOAuthSignup(token.AccessToken, &model, &currentUserLang, database.Db)
+	if signupErr != nil {
+		log.Error("Error signup: %s", signupErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/signupCheck", "Internal server error signup check!"))
+	}
+
+	session, err := createOAuthSession(&model)
+	if err != nil {
+		log.Error("Error creating session: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token!"))
+	}
+
+	writeSessionOnCookie(c, session, config)
+
+	// Write user language on cookie
+	writeUserLangOnCookie(c, currentUserLang)
+
+	redirect := c.Query("r")
+	log.Info("SetCookie done, redirect to: %s", redirect)
+
+	// Redirect to original requested resource (if specified in r=)
+	if len(redirect) > 0 {
+		log.Info(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
+
+		// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
+
+		return c.Render("redirect", fiber.Map{
+			"URL": redirect,
+		})
+
+	}
+
+	webURL := config.ExternalRedirectDomain
+
+	return c.Render("redirect", fiber.Map{
+		"URL": webURL,
+	})
 
 }
 

@@ -4,20 +4,19 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
-	handler "github.com/openfaas-incubator/go-function-sdk"
+	"github.com/gofiber/fiber/v2"
+	"github.com/red-gold/telar-core/config"
 	tsconfig "github.com/red-gold/telar-core/config"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
 	utils "github.com/red-gold/telar-core/utils"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
+	"github.com/red-gold/telar-web/micros/auth/database"
 	models "github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
 	service "github.com/red-gold/telar-web/micros/auth/services"
@@ -49,62 +48,40 @@ var googleOauthConfig = &oauth2.Config{
 
 const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 
-// LoginHandler creates a handler for logging in
-func LoginHandler(server.Request) (handler.Response, error) {
-	contents, err := ioutil.ReadFile("./html_template/login.html")
-	if err != nil {
-		return handler.Response{
-			Body: []byte(err.Error()),
-		}, err
-	}
-
-	return handler.Response{
-		Body:       contents,
-		StatusCode: http.StatusOK,
-	}, nil
-
-}
-
 // LoginGithubHandler creates a handler for logging in github
-func LoginGithubHandler(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
+func LoginGithubHandler(c *fiber.Ctx) error {
 
 	config := cf.AuthConfig
-	log.Println("Login to path", r.URL.Path)
+	log.Info("Login to path %s", c.Path())
 
 	resource := "/"
 
-	if val := r.URL.Query().Get("r"); len(val) > 0 {
+	if val := c.Query("r"); len(val) > 0 {
 		resource = val
 	}
 
 	u := buildGitHubURL(&config, resource, "read:org,read:user,user:email")
-
-	http.Redirect(w, r, u.String(), http.StatusTemporaryRedirect)
-	return handler.Response{}, nil
+	return c.Redirect(u.String(), http.StatusTemporaryRedirect)
 
 }
 
 // LoginGoogleHandler makes a handler for OAuth 2.0 redirects
-func LoginGoogleHandler(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
+func LoginGoogleHandler(c *fiber.Ctx) error {
 
 	// Create oauthState cookie
-	oauthState := generateStateOauthCookie(w)
+	oauthState := generateStateOauthCookie(c)
 
 	/*
 		AuthCodeURL receive state that is a token to protect the user from CSRF attacks. You must always provide a non-empty string and
 		validate that it matches the the state query parameter on your redirect callback.
 	*/
 	u := googleOauthConfig.AuthCodeURL(oauthState)
-	http.Redirect(w, r, u, http.StatusTemporaryRedirect)
-
-	return handler.Response{
-		Body: []byte(`You have been issued a cookie. Please navigate to the page you were looking for.`),
-	}, nil
+	return c.Redirect(u, http.StatusTemporaryRedirect)
 
 }
 
 // LoginPageHandler creates a handler for logging in
-func LoginPageHandler(server.Request) (handler.Response, error) {
+func LoginPageHandler(c *fiber.Ctx) error {
 
 	appConfig := tsconfig.AppConfig
 	authConfig := &cf.AuthConfig
@@ -120,331 +97,268 @@ func LoginPageHandler(server.Request) (handler.Response, error) {
 		githubLink:    prettyURL + "/login/github",
 		message:       "",
 	}
-	return loginPageResponse(loginData)
+	return loginPageResponse(c, loginData)
 }
 
 // LoginTelarHandler creates a handler for logging in telar social
-func LoginTelarHandler(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func LoginTelarHandler(c *fiber.Ctx) error {
 
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		authConfig := &cf.AuthConfig
-		coreConfig := &tsconfig.AppConfig
+	authConfig := &cf.AuthConfig
+	coreConfig := &tsconfig.AppConfig
 
-		loginData := &loginPageData{
-			title:         "Login - Telar Social",
-			orgName:       *coreConfig.OrgName,
-			orgAvatar:     *coreConfig.OrgAvatar,
-			appName:       *coreConfig.AppName,
-			actionForm:    "",
-			resetPassLink: "",
-			signupLink:    "",
-			message:       "",
-		}
+	loginData := &loginPageData{
+		title:         "Login - " + *coreConfig.AppName,
+		orgName:       *coreConfig.OrgName,
+		orgAvatar:     *coreConfig.OrgAvatar,
+		appName:       *coreConfig.AppName,
+		actionForm:    "",
+		resetPassLink: "",
+		signupLink:    "",
+		message:       "",
+	}
 
-		var query *url.Values
-		if len(req.Body) > 0 {
-			q, parseErr := url.ParseQuery(string(req.Body))
-			if parseErr != nil {
-				errorMessage := fmt.Sprintf("{error: 'parse SignupTokenModel (%s): %s'}",
-					req.Body, parseErr.Error())
-				return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-					parseErr
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
 
-			}
-			query = &q
+	model := &models.LoginModel{
+		Username: c.FormValue("username"),
+		Password: c.FormValue("password"),
+	}
 
-		}
+	if model.Username == "" {
+		log.Error(" Username is empty")
+		loginData.message = "Username is required!"
+		return loginPageResponse(c, loginData)
+	}
 
-		// Create service
-		userAuthService, serviceErr := service.NewUserAuthService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
+	if model.Password == "" {
+		log.Error(" Password is empty")
+		loginData.message = "Password is required!"
+		return loginPageResponse(c, loginData)
+	}
 
-		model := &models.LoginModel{
-			Username: query.Get("username"),
-			Password: query.Get("password"),
-		}
-
-		if model.Username == "" {
-			fmt.Printf("\n Username is empty\n")
-			loginData.message = "Username is required!"
-			return loginPageResponse(loginData)
-		}
-
-		if model.Password == "" {
-			fmt.Printf("\n Password is empty\n")
-			loginData.message = "Password is required!"
-			return loginPageResponse(loginData)
-		}
-
-		foundUser, err := userAuthService.FindByUsername(model.Username)
-		if err != nil || foundUser == nil {
-			if err != nil {
-				fmt.Printf("\n User not found %s\n", err.Error())
-			}
-			loginData.message = "User not found!"
-			return loginPageResponse(loginData)
-		}
-
-		fmt.Printf("[INFO] Found user auth: %v", foundUser)
-		if !foundUser.EmailVerified && !foundUser.PhoneVerified {
-
-			loginData.message = "User is not verified!"
-			return loginPageResponse(loginData)
-		}
-		fmt.Printf("\n foundUser.Password: %s  , model.Password: %s", foundUser.Password, model.Password)
-		compareErr := utils.CompareHash(foundUser.Password, []byte(model.Password))
-		if compareErr != nil {
-			fmt.Printf("\nPassword doesn't match %s\n", compareErr.Error())
-			loginData.message = "Password doesn't match!"
-			return loginPageResponse(loginData)
-		}
-
-		profileChannel := readProfileAsync(foundUser.ObjectId)
-		langChannel := readLanguageSettingAsync(foundUser.ObjectId, getUserInfoReq(req))
-
-		profileResult, langResult := <-profileChannel, <-langChannel
-		if profileResult.Error != nil || profileResult.Profile == nil {
-			if profileResult.Error != nil {
-				fmt.Printf("\n User profile  %s\n", profileResult.Error.Error())
-			}
-			loginData.message = "User Profile error!"
-			return loginPageResponse(loginData)
-		}
-
-		currentUserLang := "en"
-		fmt.Println("langResult.settings", langResult.settings)
-		langSettigPath := getSettingPath(foundUser.ObjectId, "lang", "current")
-		if val, ok := langResult.settings[langSettigPath]; ok && val != "" {
-			currentUserLang = val
-		} else {
-			go func() {
-				userInfoReq := &UserInfoInReq{
-					UserId:      foundUser.ObjectId,
-					Username:    foundUser.Username,
-					Avatar:      profileResult.Profile.Avatar,
-					DisplayName: profileResult.Profile.FullName,
-					SystemRole:  foundUser.Role,
-				}
-				createDefaultLangSetting(userInfoReq)
-			}()
-		}
-
-		tokenModel := &TokenModel{
-			token:            ProviderAccessToken{},
-			oauthProvider:    nil,
-			providerName:     "telar",
-			profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
-			organizationList: "Red Gold",
-			claim: UserClaim{
-				DisplayName: profileResult.Profile.FullName,
-				Email:       profileResult.Profile.Email,
-				Avatar:      profileResult.Profile.Avatar,
-				UserId:      foundUser.ObjectId.String(),
-				Role:        foundUser.Role,
-			},
-		}
-		session, err := createToken(tokenModel)
+	foundUser, err := userAuthService.FindByUsername(model.Username)
+	if err != nil || foundUser == nil {
 		if err != nil {
-			log.Printf("{error: 'Error creating session: %s'}", err.Error())
-			return handler.Response{
-				Body:       []byte("{error: 'Internal server error creating JWT'}"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
+			log.Error(" User not found %s", err.Error())
 		}
+		loginData.message = "User not found!"
+		return loginPageResponse(c, loginData)
+	}
 
-		// Write session on cookie
-		writeSessionOnCookie(w, session, authConfig)
+	log.Error("[INFO] Found user auth: %v", foundUser)
+	if !foundUser.EmailVerified && !foundUser.PhoneVerified {
 
-		// Write user language on cookie
-		writeUserLangOnCookie(w, currentUserLang)
+		loginData.message = "User is not verified!"
+		return loginPageResponse(c, loginData)
+	}
+	log.Info(" foundUser.Password: %s  , model.Password: %s", foundUser.Password, model.Password)
+	compareErr := utils.CompareHash(foundUser.Password, []byte(model.Password))
+	if compareErr != nil {
+		log.Error("Password doesn't match %s", compareErr.Error())
+		loginData.message = "Password doesn't match!"
+		return loginPageResponse(c, loginData)
+	}
 
-		webURL := authConfig.ExternalRedirectDomain
-		reqQuery := r.URL.Query()
-		log.Printf("SetCookie done, redirect to: %s", reqQuery)
+	profileChannel := readProfileAsync(foundUser.ObjectId)
+	langChannel := readLanguageSettingAsync(foundUser.ObjectId,
+		&UserInfoInReq{UserId: foundUser.ObjectId, Username: foundUser.Username, SystemRole: foundUser.Role})
 
-		// Redirect to original requested resource (if specified in r=)
-		redirect := reqQuery.Get("r")
-		if len(redirect) > 0 {
-			log.Printf(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
-
-			// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
-
-			return handler.Response{
-				Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + redirect + `");</script></html>`),
-				StatusCode: http.StatusOK,
-				Header: map[string][]string{
-					"Content-Type": {" text/html; charset=utf-8"},
-				},
-			}, nil
-
+	profileResult, langResult := <-profileChannel, <-langChannel
+	if profileResult.Error != nil || profileResult.Profile == nil {
+		if profileResult.Error != nil {
+			log.Error(" User profile  %s", profileResult.Error.Error())
 		}
+		loginData.message = "User Profile error!"
+		return loginPageResponse(c, loginData)
+	}
 
-		return handler.Response{
-			Body:       []byte(`<html><head></head>Redirecting.. <a href="redirect">to original resource</a>. <script>window.location.replace("` + webURL + `");</script></html>`),
-			StatusCode: http.StatusOK,
-			Header: map[string][]string{
-				"Content-Type": {" text/html; charset=utf-8"},
-			},
-		}, nil
+	currentUserLang := "en"
+	fmt.Println("langResult.settings", langResult.settings)
+	langSettigPath := getSettingPath(foundUser.ObjectId, "lang", "current")
+	if val, ok := langResult.settings[langSettigPath]; ok && val != "" {
+		currentUserLang = val
+	} else {
+		go func() {
+			userInfoReq := &UserInfoInReq{
+				UserId:      foundUser.ObjectId,
+				Username:    foundUser.Username,
+				Avatar:      profileResult.Profile.Avatar,
+				DisplayName: profileResult.Profile.FullName,
+				SystemRole:  foundUser.Role,
+			}
+			createDefaultLangSetting(userInfoReq)
+		}()
+	}
+
+	tokenModel := &TokenModel{
+		token:            ProviderAccessToken{},
+		oauthProvider:    nil,
+		providerName:     "telar",
+		profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
+		organizationList: "Red Gold",
+		claim: UserClaim{
+			DisplayName: profileResult.Profile.FullName,
+			Email:       profileResult.Profile.Email,
+			Avatar:      profileResult.Profile.Avatar,
+			UserId:      foundUser.ObjectId.String(),
+			Role:        foundUser.Role,
+		},
+	}
+	session, err := createToken(tokenModel)
+	if err != nil {
+		log.Error("Error creating session: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token"))
+	}
+
+	// Write session on cookie
+	writeSessionOnCookie(c, session, authConfig)
+
+	// Write user language on cookie
+	writeUserLangOnCookie(c, currentUserLang)
+
+	webURL := authConfig.ExternalRedirectDomain
+
+	redirect := c.Query("r")
+	log.Info("SetCookie done, redirect to: %s", redirect)
+
+	// Redirect to original requested resource (if specified in r=)
+	if len(redirect) > 0 {
+		log.Info(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
+
+		// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
+
+		return c.Render("redirect", fiber.Map{
+			"URL": redirect,
+		})
 
 	}
+
+	return c.Render("redirect", fiber.Map{
+		"URL": webURL,
+	})
+
 }
 
 // LoginAdminHandler creates a handler for logging in telar social
-func LoginAdminHandler(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func LoginAdminHandler(c *fiber.Ctx) error {
 
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		authConfig := &cf.AuthConfig
-		// Create the model object
-		var model models.LoginModel
-		if err := json.Unmarshal(req.Body, &model); err != nil {
-			errorMessage := fmt.Sprintf("Unmarshal LoginModel Error %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("modelMarshalError", errorMessage)}, nil
-		}
-
-		// Create service
-		userAuthService, serviceErr := service.NewUserAuthService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		if model.Username == "" {
-			fmt.Printf("\n Username is empty\n")
-			errorMessage := fmt.Sprintf("Username is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("usernameRequiredError", errorMessage)},
-				nil
-		}
-
-		if model.Password == "" {
-			fmt.Printf("\n Password is empty\n")
-			errorMessage := fmt.Sprintf("Password is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("passwordRequiredError", errorMessage)},
-				nil
-		}
-
-		foundUser, err := userAuthService.FindByUsername(model.Username)
-		if err != nil {
-			fmt.Printf("\n User not found %s\n", err.Error())
-			errorMessage := fmt.Sprintf("User not found %s", err.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFoundError", errorMessage)},
-				nil
-		}
-
-		if foundUser == nil {
-			fmt.Printf("\n User not found %s\n", model.Username)
-			errorMessage := fmt.Sprintf("User not found %s", model.Username)
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFoundError", errorMessage)},
-				nil
-		}
-
-		if !foundUser.EmailVerified && !foundUser.PhoneVerified {
-
-			errorMessage := fmt.Sprintf("User is not verified!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotVerifiedError", errorMessage)},
-				nil
-		}
-		compareErr := utils.CompareHash(foundUser.Password, []byte(model.Password))
-		if compareErr != nil {
-			fmt.Printf("\nPassword doesn't match %s\n", compareErr.Error())
-			errorMessage := fmt.Sprintf("Password doesn't match %s", compareErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("passwordMatchError", errorMessage)},
-				nil
-		}
-		foundUserProfile, errProfile := getUserProfileByID(foundUser.ObjectId)
-		if errProfile != nil {
-			fmt.Printf("\n User profile  %s\n", errProfile.Error())
-			errorMessage := fmt.Sprintf("Find user profile %s", errProfile.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("findUserProfileError", errorMessage)},
-				nil
-		}
-		if foundUserProfile == nil {
-			fmt.Printf("\n Could not find user  %s\n", foundUser.ObjectId)
-			errorMessage := fmt.Sprintf("Could not find user %s", foundUser.ObjectId)
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("findUserProfileError", errorMessage)},
-				nil
-		}
-
-		tokenModel := &TokenModel{
-			token:            ProviderAccessToken{},
-			oauthProvider:    nil,
-			providerName:     "telar",
-			profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
-			organizationList: "Red Gold",
-			claim: UserClaim{
-				DisplayName: foundUserProfile.FullName,
-				Email:       foundUserProfile.Email,
-				Avatar:      foundUserProfile.Avatar,
-				UserId:      foundUser.ObjectId.String(),
-				Role:        foundUser.Role,
-			},
-		}
-		session, err := createToken(tokenModel)
-		if err != nil {
-			log.Printf("{error: 'Error creating session: %s'}", err.Error())
-			return handler.Response{
-				Body:       []byte("{error: 'Internal server error creating JWT'}"),
-				StatusCode: http.StatusInternalServerError,
-			}, nil
-		}
-
-		// Write session on cookie
-		writeSessionOnCookie(w, session, authConfig)
-		fmt.Printf("\nSession is created: %s \n", session)
-		return handler.Response{
-			Body:       []byte(fmt.Sprintf(`{"success": true, "token": "%s"}`, session)),
-			StatusCode: http.StatusOK,
-		}, nil
+	authConfig := &cf.AuthConfig
+	// Create the model object
+	model := new(models.LoginModel)
+	if err := c.BodyParser(model); err != nil {
+		errorMessage := fmt.Sprintf("Unmarshal LoginModel Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/modelMarshal", "Can not parse body"))
 	}
+
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
+
+	if model.Username == "" {
+		log.Error(" Username is empty")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("usernameRequired", "Username is required!"))
+
+	}
+
+	if model.Password == "" {
+		log.Error(" Password is empty")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordRequired", "Password is required!"))
+
+	}
+
+	foundUser, err := userAuthService.FindByUsername(model.Username)
+	if err != nil {
+		log.Error(" User not found %s", err.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userNotFoundError", "User not found"))
+
+	}
+
+	if foundUser == nil {
+		log.Error(" User in null%s", model.Username)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userNotFoundError", "User not found"))
+	}
+
+	if !foundUser.EmailVerified && !foundUser.PhoneVerified {
+		errorMessage := fmt.Sprintf("User %s is not verified!", foundUser.Username)
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userNotVerifiedError", errorMessage))
+	}
+	compareErr := utils.CompareHash(foundUser.Password, []byte(model.Password))
+	if compareErr != nil {
+		log.Error("Password doesn't match %s", compareErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordMatchError", "Password doesn't match "))
+	}
+
+	foundUserProfile, errProfile := getUserProfileByID(foundUser.ObjectId)
+	if errProfile != nil {
+		log.Error(" User profile  %s", errProfile.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserProfileError", "Find user profile error"))
+	}
+	if foundUserProfile == nil {
+		log.Error(" User profile is null  %s", foundUser.ObjectId)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserProfileError", "Could not find user"))
+	}
+
+	tokenModel := &TokenModel{
+		token:            ProviderAccessToken{},
+		oauthProvider:    nil,
+		providerName:     "telar",
+		profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
+		organizationList: *config.AppConfig.OrgName,
+		claim: UserClaim{
+			DisplayName: foundUserProfile.FullName,
+			Email:       foundUserProfile.Email,
+			Avatar:      foundUserProfile.Avatar,
+			UserId:      foundUser.ObjectId.String(),
+			Role:        foundUser.Role,
+		},
+	}
+	session, err := createToken(tokenModel)
+	if err != nil {
+		log.Error("Error creating session: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token"))
+	}
+
+	// Write session on cookie
+	writeSessionOnCookie(c, session, authConfig)
+	log.Info("Session is created: %s", session)
+
+	return c.JSON(fiber.Map{
+		"token": session,
+	})
+
 }
 
 // loginPageResponse login page response template
-func loginPageResponse(data *loginPageData) (handler.Response, error) {
-	html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/login.html", struct {
-		Title         string
-		OrgName       string
-		OrgAvatar     string
-		AppName       string
-		ActionForm    string
-		ResetPassLink string
-		SignupLink    string
-		GithubLink    string
-		Message       string
-	}{
-		Title:         data.title,
-		OrgName:       data.orgName,
-		OrgAvatar:     data.orgAvatar,
-		AppName:       data.appName,
-		ActionForm:    data.actionForm,
-		ResetPassLink: data.resetPassLink,
-		SignupLink:    data.signupLink,
-		GithubLink:    data.githubLink,
-		Message:       data.message,
+func loginPageResponse(c *fiber.Ctx, data *loginPageData) error {
+	return c.Render("login", fiber.Map{
+		"Title":         data.title,
+		"OrgName":       data.orgName,
+		"OrgAvatar":     data.orgAvatar,
+		"AppName":       data.appName,
+		"ActionForm":    data.actionForm,
+		"ResetPassLink": data.resetPassLink,
+		"SignupLink":    data.signupLink,
+		"GithubLink":    data.githubLink,
+		"Message":       data.message,
 	})
-	if parseErr != nil {
-		fmt.Printf("Can not parse the html page! error: %s ", parseErr)
-		return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseHtmlError", "Can not parse the html page!")},
-			nil
-	}
-
-	return handler.Response{
-		Body:       html,
-		StatusCode: http.StatusOK,
-		Header: map[string][]string{
-			"Content-Type": {" text/html; charset=utf-8"},
-		},
-	}, nil
 }
 
-func generateStateOauthCookie(w http.ResponseWriter) string {
+func generateStateOauthCookie(c *fiber.Ctx) string {
 	var expiration = time.Now().Add(365 * 24 * time.Hour)
 
 	b := make([]byte, 16)
 	rand.Read(b)
 	state := base64.URLEncoding.EncodeToString(b)
-	cookie := http.Cookie{Name: "oauthstate", Value: state, Expires: expiration}
-	http.SetCookie(w, &cookie)
+	cookie := fiber.Cookie{Name: "oauthstate", Value: state, Expires: expiration}
+	c.Cookie(&cookie)
 
 	return state
 }

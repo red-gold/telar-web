@@ -1,9 +1,10 @@
 package models
 
 type SignupTokenModel struct {
-	User       UserSignupTokenModel `json:"user"`
-	VerifyType string               `json:"verifyType"`
-	Recaptcha  string               `json:"g-recaptcha-response"`
+	User         UserSignupTokenModel `json:"user"`
+	VerifyType   string               `json:"verifyType"`
+	Recaptcha    string               `json:"g-recaptcha-response"`
+	ResponseType string               `json:"responseType"`
 }
 
 type UserSignupTokenModel struct {

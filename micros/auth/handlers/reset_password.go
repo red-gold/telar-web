@@ -3,328 +3,273 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
 	tsconfig "github.com/red-gold/telar-core/config"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
+	"github.com/red-gold/telar-web/micros/auth/database"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
 	service "github.com/red-gold/telar-web/micros/auth/services"
 )
 
 // ResetPasswordPageHandler creates a handler for logging in
-func ResetPasswordPageHandler(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		verifyId := req.GetParamByName("verifyId")
-		appConfig := tsconfig.AppConfig
-		authConfig := cf.AuthConfig
+func ResetPasswordPageHandler(c *fiber.Ctx) error {
+	verifyId := c.Params("verifyId")
+	appConfig := tsconfig.AppConfig
+	authConfig := cf.AuthConfig
 
-		// Create service
-		userAuthService, serviceErr := service.NewUserAuthService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		userVerificationService, serviceErr := service.NewUserVerificationService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		verifyUUID, uuidErr := uuid.FromString(verifyId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, uuidErr
-		}
-
-		foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
-		if findErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, findErr
-		}
-
-		foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
-		if userAuthErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, userAuthErr
-		}
-		if foundUserAuth == nil {
-			return handler.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
-			}, nil
-		}
-		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
-
-		html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/reset_password.html", struct {
-			Title         string
-			OrgName       string
-			OrgAvatar     string
-			AppName       string
-			ActionForm    string
-			ResetPassLink string
-			LoginLink     string
-		}{
-			Title:         "Login - Telar Social",
-			OrgName:       *appConfig.OrgName,
-			OrgAvatar:     *appConfig.OrgAvatar,
-			AppName:       *appConfig.AppName,
-			ActionForm:    fmt.Sprintf("%s/password/reset/%s", prettyURL, verifyId),
-			ResetPassLink: "",
-			LoginLink:     prettyURL + "/login",
-		})
-		if parseErr != nil {
-			fmt.Printf("Can not parse the html page! error: %s ", parseErr)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseHtmlError", "Can not parse the html page!")},
-				nil
-		}
-
-		return handler.Response{
-			Body:       html,
-			StatusCode: http.StatusOK,
-			Header: map[string][]string{
-				"Content-Type": {" text/html; charset=utf-8"},
-			},
-		}, nil
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
 	}
+
+	userVerificationService, serviceErr := service.NewUserVerificationService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userVerificationService", serviceErr.Error()))
+	}
+
+	verifyUUID, uuidErr := uuid.FromString(verifyId)
+	if uuidErr != nil {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseVerifyUUIDError", uuidErr.Error()))
+
+	}
+
+	foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
+	if findErr != nil {
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findVerification", findErr.Error()))
+	}
+
+	foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
+	if userAuthErr != nil {
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
+	}
+
+	if foundUserAuth == nil {
+		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Could not find user with veridy ID "+verifyId))
+	}
+
+	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
+
+	return c.Render("reset_password", fiber.Map{
+		"Title":         "Login - " + *appConfig.AppName,
+		"OrgName":       *appConfig.OrgName,
+		"OrgAvatar":     *appConfig.OrgAvatar,
+		"AppName":       *appConfig.AppName,
+		"ActionForm":    fmt.Sprintf("%s/password/reset/%s", prettyURL, verifyId),
+		"ResetPassLink": "",
+		"LoginLink":     prettyURL + "/login",
+	})
+
 }
 
 // ForgetPasswordPageHandler creates a handler for logging in
-func ForgetPasswordPageHandler(req server.Request) (handler.Response, error) {
+func ForgetPasswordPageHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
 	authConfig := cf.AuthConfig
 	loginURL := utils.GetPrettyURLf(authConfig.BaseRoute + "/login")
-	html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/forget_password.html", struct {
-		Title      string
-		OrgName    string
-		OrgAvatar  string
-		AppName    string
-		ActionForm string
-		LoginLink  string
-	}{
-		Title:      "Login - Telar Social",
-		OrgName:    *appConfig.OrgName,
-		OrgAvatar:  *appConfig.OrgAvatar,
-		AppName:    *appConfig.AppName,
-		ActionForm: "",
-		LoginLink:  loginURL,
-	})
-	if parseErr != nil {
-		fmt.Printf("Can not parse the html page! error: %s ", parseErr)
-		return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseHtmlError", "Can not parse the html page!")},
-			nil
-	}
 
-	return handler.Response{
-		Body:       html,
-		StatusCode: http.StatusOK,
-		Header: map[string][]string{
-			"Content-Type": {" text/html; charset=utf-8"},
-		},
-	}, nil
+	return c.Render("reset_password", fiber.Map{
+		"Title":      "Login - " + *appConfig.AppName,
+		"OrgName":    *appConfig.OrgName,
+		"OrgAvatar":  *appConfig.OrgAvatar,
+		"AppName":    *appConfig.AppName,
+		"ActionForm": "",
+		"LoginLink":  loginURL,
+	})
 
 }
 
-// ForgetPasswordFormHandler creates a handler for logging in
-func ForgetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+// ForgetPasswordFormHandler
+func ForgetPasswordFormHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
 	authConfig := cf.AuthConfig
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		params, parseQueryErr := url.ParseQuery(string(req.Body))
 
-		if parseQueryErr != nil {
-			fmt.Printf("Can not parse the data form! error: %s ", parseQueryErr)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseDataFormError", "Can not parse the data form!")},
-				nil
-		}
-		userEmail := params.Get("email")
+	userEmail := c.FormValue("email")
+	responseType := c.FormValue("responseType")
 
-		// Create service
-		userAuthService, serviceErr := service.NewUserAuthService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-		foundUserAuth, userAuthErr := userAuthService.FindByUsername(userEmail)
-		if userAuthErr != nil {
-			errorMessage := fmt.Sprintf("User not found: %s",
-				userAuthErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFound", errorMessage)},
-				nil
-		}
-		if foundUserAuth == nil {
-			fmt.Printf("\n User not found %s\n", userEmail)
-			errorMessage := fmt.Sprintf("User not found %s", userEmail)
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userNotFoundError", errorMessage)},
-				nil
-		}
+	if userEmail == "" {
+		errorMessage := fmt.Sprintf("Email is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("emailIsRequired", errorMessage))
 
-		userVerificationService, serviceErr := service.NewUserVerificationService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-		verifyId, uuidErr := uuid.NewV4()
-		if uuidErr != nil {
-			fmt.Printf("Error in uuid.NewV4 error: %s", uuidErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("canNotCreateUserId", "Error in creating new user id!")},
-				nil
-		}
-
-		newUserVerification := &dto.UserVerification{
-			ObjectId:        verifyId,
-			UserId:          foundUserAuth.ObjectId,
-			Code:            "0",
-			Target:          foundUserAuth.Username,
-			TargetType:      constants.EmailVerifyConst,
-			Counter:         1,
-			RemoteIpAddress: req.IpAddress,
-		}
-		saveErr := userVerificationService.SaveUserVerification(newUserVerification)
-		if saveErr != nil {
-			fmt.Printf("Can not save UserVerification: %s", saveErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("canNotSaveVerification", "Error in preparing verification for reset password!")},
-				nil
-		}
-		// Send email
-
-		email := utils.NewEmail(*appConfig.RefEmail, *appConfig.RefEmailPass, *appConfig.SmtpEmail)
-		emailReq := utils.NewEmailRequest([]string{foundUserAuth.Username}, "Reset Password", "")
-		prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
-
-		emailResStatus, emailResErr := email.SendEmail(emailReq, "html_template/email_link_verify_reset_pass.html", struct {
-			Name      string
-			AppName   string
-			AppURL    string
-			Link      string
-			Email     string
-			OrgName   string
-			OrgAvatar string
-		}{
-			Name:      foundUserAuth.Username,
-			AppName:   *appConfig.AppName,
-			AppURL:    authConfig.WebURL,
-			Link:      fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, verifyId),
-			Email:     foundUserAuth.Username,
-			OrgName:   *appConfig.OrgName,
-			OrgAvatar: *appConfig.OrgAvatar,
-		})
-
-		if emailResErr != nil {
-			fmt.Printf("Error happened in sending email error: %s", emailResErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("sendEmailError", "Unable to send email!")},
-				nil
-		}
-		if !emailResStatus {
-			fmt.Printf("Email response status is false! ")
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("sendEmailStatusError", "Email response status is false! ")},
-				nil
-		}
-		html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/message.html", struct {
-			Title     string
-			OrgAvatar string
-			Message   string
-		}{
-			Title:     "Reset Password - Telar Social",
-			OrgAvatar: *appConfig.OrgAvatar,
-			Message:   fmt.Sprintf("Reset password link has been sent to %s. It may takes up to 30 minutes to receive the email.", userEmail),
-		})
-		if parseErr != nil {
-			fmt.Printf("Can not parse the html page! error: %s ", parseErr)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseHtmlError", "Can not parse the html page!")},
-				nil
-		}
-
-		return handler.Response{
-			Body:       html,
-			StatusCode: http.StatusOK,
-			Header: map[string][]string{
-				"Content-Type": {" text/html; charset=utf-8"},
-			},
-		}, nil
 	}
+
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
+
+	foundUserAuth, userAuthErr := userAuthService.FindByUsername(userEmail)
+	if userAuthErr != nil {
+		errorMessage := fmt.Sprintf("User not found: %s",
+			userAuthErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userNotFound", "User not found"))
+
+	}
+	if foundUserAuth == nil {
+		errorMessage := fmt.Sprintf("User auth not found %s", userEmail)
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userAuthNotFound", "User auth not found"))
+	}
+
+	userVerificationService, serviceErr := service.NewUserVerificationService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userVerificationService", serviceErr.Error()))
+
+	}
+
+	verifyId := uuid.Must(uuid.NewV4())
+
+	newUserVerification := &dto.UserVerification{
+		ObjectId:        verifyId,
+		UserId:          foundUserAuth.ObjectId,
+		Code:            "0",
+		Target:          foundUserAuth.Username,
+		TargetType:      constants.EmailVerifyConst,
+		Counter:         1,
+		RemoteIpAddress: c.IP(),
+	}
+	saveErr := userVerificationService.SaveUserVerification(newUserVerification)
+	if saveErr != nil {
+		log.Error("Can not save UserVerification: %s", saveErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("canNotSaveVerification", "Error in preparing verification for reset password!"))
+
+	}
+
+	// Send email
+	email := utils.NewEmail(*appConfig.RefEmail, *appConfig.RefEmailPass, *appConfig.SmtpEmail)
+	emailReq := utils.NewEmailRequest([]string{foundUserAuth.Username}, "Reset Password", "")
+	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
+
+	// Generate reset password token
+	token, err := generateResetPasswordToken(verifyId.String())
+	if err != nil {
+		log.Error("Generate reset password token: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("generateToken", "Error in generating token!"))
+
+	}
+
+	emailResStatus, emailResErr := email.SendEmail(emailReq, "views/email_link_verify_reset_pass.html", struct {
+		Name      string
+		AppName   string
+		AppURL    string
+		Link      string
+		Email     string
+		OrgName   string
+		OrgAvatar string
+	}{
+		Name:      foundUserAuth.Username,
+		AppName:   *appConfig.AppName,
+		AppURL:    authConfig.WebURL,
+		Link:      fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, token),
+		Email:     foundUserAuth.Username,
+		OrgName:   *appConfig.OrgName,
+		OrgAvatar: *appConfig.OrgAvatar,
+	})
+
+	if emailResErr != nil {
+		log.Error("Error happened in sending email error: %s", emailResErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("sendEmailError", "Unable to send email!"))
+
+	}
+
+	if !emailResStatus {
+		log.Error("Email response status is false! ")
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("sendEmailStatusError", "Email response status is false!"))
+	}
+
+	if responseType == SPAResponseType {
+		return c.SendStatus(http.StatusOK)
+	}
+
+	return c.Render("message", fiber.Map{
+		"Title":     "Reset Password - " + *appConfig.AppName,
+		"OrgAvatar": *appConfig.OrgAvatar,
+		"Message":   fmt.Sprintf("Reset password link has been sent to %s. It may takes up to 30 minutes to receive the email.", userEmail),
+	})
+
 }
 
 // ResetPasswordFormHandler creates a handler for logging in
-func ResetPasswordFormHandler(db interface{}) func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func ResetPasswordFormHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
-		verifyId := req.GetParamByName("verifyId")
-		params, parseQueryErr := url.ParseQuery(string(req.Body))
 
-		if parseQueryErr != nil {
-			fmt.Printf("Can not parse the data form! error: %s ", parseQueryErr)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseDataFormError", "Can not parse the data form!")},
-				nil
-		}
-		newPassword := params.Get("newPassword")
-		confirmPassword := params.Get("confirmPassword")
+	verifyIdToken := c.Params("verifyId")
+	responseType := c.FormValue("responseType")
 
-		if newPassword != confirmPassword {
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("passwordNotMatchError", "Confirm password didn't match")}, nil
-		}
+	claims, err := decodeResetPasswordToken(verifyIdToken)
+	if err != nil {
+		log.Error("Can not veify reset password token: %s - %s", verifyIdToken, err.Error())
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("invalidToken", "Can not veify reset password token!"))
 
-		// Create service
-		userAuthService, serviceErr := service.NewUserAuthService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		userVerificationService, serviceErr := service.NewUserVerificationService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		verifyUUID, uuidErr := uuid.FromString(verifyId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, uuidErr
-		}
-
-		foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
-		if findErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, findErr
-		}
-
-		foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
-		if userAuthErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, userAuthErr
-		}
-		if foundUserAuth == nil {
-			return handler.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
-			}, nil
-		}
-
-		hashPassword, hashErr := utils.Hash(newPassword)
-		if hashErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest}, hashErr
-		}
-
-		updateErr := userAuthService.UpdatePassword(foundUserAuth.ObjectId, hashPassword)
-		if updateErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, updateErr
-		}
-
-		html, parseErr := utils.ParseHtmlBytesTemplate("./html_template/message.html", struct {
-			Title     string
-			OrgAvatar string
-			Message   string
-		}{
-			Title:     "Reset Password - Telar Social",
-			OrgAvatar: *appConfig.OrgAvatar,
-			Message:   fmt.Sprintf("Your password has been updated. You can login with new password."),
-		})
-		if parseErr != nil {
-			fmt.Printf("Can not parse the html page! error: %s ", parseErr)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("parseHtmlError", "Can not parse the html page!")},
-				nil
-		}
-
-		return handler.Response{
-			Body:       html,
-			StatusCode: http.StatusOK,
-			Header: map[string][]string{
-				"Content-Type": {" text/html; charset=utf-8"},
-			},
-		}, nil
 	}
+
+	newPassword := c.FormValue("newPassword")
+	confirmPassword := c.FormValue("confirmPassword")
+
+	if newPassword != confirmPassword {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordNotMatchError", "Confirm password didn't match"))
+	}
+
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
+
+	userVerificationService, serviceErr := service.NewUserVerificationService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userVerificationService", serviceErr.Error()))
+	}
+
+	verifyUUID, uuidErr := uuid.FromString(claims.VerifyId)
+	if uuidErr != nil {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseVerifyUUIDError", uuidErr.Error()))
+	}
+
+	foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
+	if findErr != nil {
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findVerification", findErr.Error()))
+	}
+
+	foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
+	if userAuthErr != nil {
+		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
+	}
+	if foundUserAuth == nil {
+		errorMessage := fmt.Sprintf("User auth not found %s", foundVerification.UserId)
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userAuthNotFound", "User auth not found"))
+	}
+
+	hashPassword, hashErr := utils.Hash(newPassword)
+	if hashErr != nil {
+		log.Error("Hash password %s", hashErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/hash", "Hash error!"))
+
+	}
+
+	updateErr := userAuthService.UpdatePassword(foundUserAuth.ObjectId, hashPassword)
+	if updateErr != nil {
+		log.Error("Update user password %s", updateErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/updateUserPassword", "Can not update password!"))
+	}
+
+	if responseType == SPAResponseType {
+		return c.SendStatus(http.StatusOK)
+	}
+
+	return c.Render("message", fiber.Map{
+		"Title":     "Reset Password - " + *appConfig.AppName,
+		"OrgAvatar": *appConfig.OrgAvatar,
+		"Message":   fmt.Sprintf("Your password has been updated. You can login with new password."),
+	})
+
 }

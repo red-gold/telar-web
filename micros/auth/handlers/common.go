@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	b64 "encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -14,11 +15,11 @@ import (
 
 	"github.com/alexellis/hmac"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
 	coreConfig "github.com/red-gold/telar-core/config"
-	tsconfig "github.com/red-gold/telar-core/config"
 	log "github.com/red-gold/telar-core/pkg/log"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
 	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/models"
@@ -86,6 +87,11 @@ type TelarSocailClaims struct {
 	jwt.StandardClaims
 }
 
+type ResetPasswordClaims struct {
+	VerifyId string `json:"verifyId"`
+	jwt.StandardClaims
+}
+
 // ProviderAccessToken as issued by GitHub or GitLab
 type ProviderAccessToken struct {
 	AccessToken string `json:"access_token"`
@@ -114,13 +120,17 @@ func getHeadersFromUserInfoReq(info *UserInfoInReq) map[string][]string {
 }
 
 // getUserInfoReq
-func getUserInfoReq(req server.Request) *UserInfoInReq {
+func getUserInfoReq(c *fiber.Ctx) *UserInfoInReq {
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		return &UserInfoInReq{}
+	}
 	userInfoInReq := &UserInfoInReq{
-		UserId:      req.UserID,
-		Username:    req.Username,
-		Avatar:      req.Avatar,
-		DisplayName: req.DisplayName,
-		SystemRole:  req.SystemRole,
+		UserId:      currentUser.UserID,
+		Username:    currentUser.Username,
+		Avatar:      currentUser.Avatar,
+		DisplayName: currentUser.DisplayName,
+		SystemRole:  currentUser.SystemRole,
 	}
 	return userInfoInReq
 
@@ -130,6 +140,67 @@ func getUserInfoReq(req server.Request) *UserInfoInReq {
 func getSettingPath(userId uuid.UUID, settingType, settingKey string) string {
 	key := fmt.Sprintf("%s:%s:%s", userId.String(), settingType, settingKey)
 	return key
+}
+
+// decodeResetPasswordToken Decode reset password token
+func decodeResetPasswordToken(token string) (*ResetPasswordClaims, error) {
+
+	// Create the JWT key used to decode token
+	privateKeyEnc := b64.StdEncoding.EncodeToString([]byte(*coreConfig.AppConfig.PrivateKey))
+	var jwtKey = []byte(privateKeyEnc[:20])
+
+	decodedToken, err := b64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return nil, fmt.Errorf("Can not decode token %s", err.Error())
+	}
+
+	claims := new(ResetPasswordClaims)
+
+	tkn, err := jwt.ParseWithClaims(string(decodedToken), claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return nil, fmt.Errorf("signatureInvalid")
+		}
+		return nil, err
+	}
+	if !tkn.Valid {
+		return nil, fmt.Errorf("invalidToken")
+	}
+	return claims, nil
+}
+
+// generateResetPasswordToken Generate reset password token
+func generateResetPasswordToken(verifyId string) (string, error) {
+
+	// Create the JWT key used to create the signature
+	privateKeyEnc := b64.StdEncoding.EncodeToString([]byte(*coreConfig.AppConfig.PrivateKey))
+	var jwtKey = []byte(privateKeyEnc[:20])
+
+	// Declare the expiration time of the token
+	// here, we have kept it as 5 minutes
+	expirationTime := time.Now().Add(5 * time.Minute)
+	// Create the JWT claims, which includes the username and expiry time
+	claims := &ResetPasswordClaims{
+		VerifyId: verifyId,
+		StandardClaims: jwt.StandardClaims{
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	// Declare the token with the algorithm used for signing, and the claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// Create the JWT string
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		// If there is an error in creating the JWT return an internal server error\
+		return "", err
+	}
+
+	return b64.StdEncoding.EncodeToString([]byte(tokenString)), nil
+
 }
 
 func buildGitHubURL(config *authConfig.Configuration, string, scope string) *url.URL {
@@ -197,57 +268,59 @@ func createOAuthSession(model *TokenModel) (string, error) {
 }
 
 // writeTokenOnCookie wite session on cookie
-func writeSessionOnCookie(w http.ResponseWriter, session string, config *authConfig.Configuration) {
+func writeSessionOnCookie(c *fiber.Ctx, session string, config *authConfig.Configuration) {
 	appConfig := coreConfig.AppConfig
 	parts := strings.Split(session, ".")
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
+	headerCookie := &fiber.Cookie{
+		HTTPOnly: true,
 		Name:     *appConfig.HeaderCookieName,
 		Value:    parts[0],
 		Path:     "/",
 		// Expires:  time.Now().Add(config.CookieExpiresIn),
 		Domain: config.CookieRootDomain,
-	})
+	}
 
-	http.SetCookie(w, &http.Cookie{
+	payloadCookie := &fiber.Cookie{
 		// HttpOnly: true,
 		Name:  *appConfig.PayloadCookieName,
 		Value: parts[1],
 		Path:  "/",
 		// Expires: time.Now().Add(config.CookieExpiresIn),
 		Domain: config.CookieRootDomain,
-	})
+	}
 
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
+	signCookie := &fiber.Cookie{
+		HTTPOnly: true,
 		Name:     *appConfig.SignatureCookieName,
 		Value:    parts[2],
 		Path:     "/",
 		// Expires:  time.Now().Add(config.CookieExpiresIn),
 		Domain: config.CookieRootDomain,
-	})
+	}
+	// Set cookie
+	c.Cookie(headerCookie)
+	c.Cookie(payloadCookie)
+	c.Cookie(signCookie)
 }
 
 // Write user language on cookie
-func writeUserLangOnCookie(w http.ResponseWriter, lang string) {
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: false,
+func writeUserLangOnCookie(c *fiber.Ctx, lang string) {
+	langCookie := &fiber.Cookie{
+		HTTPOnly: false,
 		Name:     "social-lang",
 		Value:    lang,
 		Path:     "/",
-		// Expires:  time.Now().Add(config.CookieExpiresIn),
-		Domain: authConfig.AuthConfig.CookieRootDomain,
-	})
+		Domain:   authConfig.AuthConfig.CookieRootDomain,
+	}
+	c.Cookie(langCookie)
 }
 
 // createToken
 func createToken(model *TokenModel) (string, error) {
 	var err error
 	var session string
-	authConfig := &authConfig.AuthConfig
-	coreConfig := &tsconfig.AppConfig
 
-	privateKey, keyErr := jwt.ParseECPrivateKeyFromPEM([]byte(*coreConfig.PrivateKey))
+	privateKey, keyErr := jwt.ParseECPrivateKeyFromPEM([]byte(*coreConfig.AppConfig.PrivateKey))
 	if keyErr != nil {
 		log.Error("unable to parse private key: %s", keyErr.Error())
 		return "", fmt.Errorf("unable to parse private key: %s", keyErr.Error())
@@ -261,7 +334,7 @@ func createToken(model *TokenModel) (string, error) {
 			ExpiresAt: time.Now().Add(48 * time.Hour).Unix(),
 			IssuedAt:  time.Now().Unix(),
 			Subject:   model.profile.Login,
-			Audience:  authConfig.CookieRootDomain,
+			Audience:  authConfig.AuthConfig.CookieRootDomain,
 		},
 		Organizations: model.organizationList,
 		Name:          model.profile.Name,
@@ -309,8 +382,8 @@ func functionCall(method string, bytesReq []byte, url string, header map[string]
 
 	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
 	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
+	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), types.HeaderHMACAuthenticate)
+	httpReq.Header.Add(types.HeaderHMACAuthenticate, "sha1="+hex.EncodeToString(digest))
 	if header != nil {
 		for k, v := range header {
 			httpReq.Header[k] = v

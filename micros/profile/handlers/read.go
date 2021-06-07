@@ -1,15 +1,15 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
 	"github.com/red-gold/telar-core/pkg/log"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/profile/database"
 	models "github.com/red-gold/telar-web/micros/profile/models"
 	service "github.com/red-gold/telar-web/micros/profile/services"
 )
@@ -19,258 +19,221 @@ type MembersPayload struct {
 }
 
 // ReadDtoProfileHandle a function invocation
-func ReadDtoProfileHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func ReadDtoProfileHandle(c *fiber.Ctx) error {
 
-	log.Info("ReadDtoProfileHandle")
-	return func(req server.Request) (handler.Response, error) {
-		userId := req.GetParamByName("userId")
-		userUUID, uuidErr := uuid.FromString(userId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("parseUUIDError", "Can not parse user id!")},
-				nil
-		}
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUser, err := userProfileService.FindByUserId(userUUID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		if foundUser == nil {
-			return handler.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
-			}, nil
-		}
-
-		body, marshalErr := json.Marshal(foundUser)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("{error: 'Error while marshaling userProfile: %s'}",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	userId := c.Params("userId")
+	log.Info("Read dto profile by userId %s", userId)
+	userUUID, uuidErr := uuid.FromString(userId)
+	if uuidErr != nil {
+		log.Error("Parse UUID %s ", uuidErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseUUIDError", "Can not parse user id!"))
 	}
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
+	}
+
+	foundUser, err := userProfileService.FindByUserId(userUUID)
+	if err != nil {
+		log.Error("FindByUserId %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
+	}
+
+	if foundUser == nil {
+		log.Error("Could not find user " + userUUID.String())
+		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
+	}
+
+	return c.JSON(foundUser)
+
 }
 
 // ReadProfileHandle a function invocation
-func ReadProfileHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func ReadProfileHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		userId := req.GetParamByName("userId")
-		userUUID, uuidErr := uuid.FromString(userId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("parseUUIDError", "Can not parse user id!")},
-				nil
-		}
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUser, err := userProfileService.FindByUserId(userUUID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		if foundUser == nil {
-			return handler.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
-			}, nil
-		}
-
-		profileModel := models.MyProfileModel{
-			ObjectId:       foundUser.ObjectId,
-			FullName:       foundUser.FullName,
-			Avatar:         foundUser.Avatar,
-			Banner:         foundUser.Banner,
-			TagLine:        foundUser.TagLine,
-			Birthday:       foundUser.Birthday,
-			WebUrl:         foundUser.WebUrl,
-			CompanyName:    foundUser.CompanyName,
-			FacebookId:     foundUser.FacebookId,
-			InstagramId:    foundUser.InstagramId,
-			TwitterId:      foundUser.TwitterId,
-			AccessUserList: foundUser.AccessUserList,
-			Permission:     foundUser.Permission,
-		}
-
-		body, marshalErr := json.Marshal(profileModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("{error: 'Error while marshaling userProfile: %s'}",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	userId := c.Params("userId")
+	userUUID, uuidErr := uuid.FromString(userId)
+	if uuidErr != nil {
+		log.Error("Parse UUID %s ", uuidErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseUUIDError", "Can not parse user id!"))
 	}
+
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
+	}
+
+	foundUser, err := userProfileService.FindByUserId(userUUID)
+	if err != nil {
+		log.Error("FindByUserId %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
+	}
+
+	if foundUser == nil {
+		log.Error("Could not find user " + userUUID.String())
+		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
+	}
+
+	profileModel := models.MyProfileModel{
+		ObjectId:       foundUser.ObjectId,
+		FullName:       foundUser.FullName,
+		Avatar:         foundUser.Avatar,
+		Banner:         foundUser.Banner,
+		TagLine:        foundUser.TagLine,
+		Birthday:       foundUser.Birthday,
+		WebUrl:         foundUser.WebUrl,
+		CompanyName:    foundUser.CompanyName,
+		FacebookId:     foundUser.FacebookId,
+		InstagramId:    foundUser.InstagramId,
+		TwitterId:      foundUser.TwitterId,
+		AccessUserList: foundUser.AccessUserList,
+		Permission:     foundUser.Permission,
+	}
+
+	return c.JSON(profileModel)
+
 }
 
 // ReadMyProfileHandle a function invocation to read authed user profile
-func ReadMyProfileHandle(db interface{}) func(server.Request) (handler.Response, error) {
-	fmt.Printf("\n[INFO] FOUND USER main ReadMyProfileHandle")
+func ReadMyProfileHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUser, err := userProfileService.FindByUserId(req.UserID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-		if foundUser == nil {
-			return handler.Response{
-				StatusCode: http.StatusNotFound,
-				Body:       utils.MarshalError("notFoundUser", "Could not find user "+req.UserID.String()),
-			}, nil
-		}
-
-		profileModel := models.MyProfileModel{
-			ObjectId:       foundUser.ObjectId,
-			FullName:       foundUser.FullName,
-			Avatar:         foundUser.Avatar,
-			Banner:         foundUser.Banner,
-			TagLine:        foundUser.TagLine,
-			Birthday:       foundUser.Birthday,
-			WebUrl:         foundUser.WebUrl,
-			CompanyName:    foundUser.CompanyName,
-			FacebookId:     foundUser.FacebookId,
-			InstagramId:    foundUser.InstagramId,
-			TwitterId:      foundUser.TwitterId,
-			AccessUserList: foundUser.AccessUserList,
-			Permission:     foundUser.Permission,
-		}
-		body, marshalErr := json.Marshal(profileModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling userProfile: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("marshalUserProfileError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
 	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[ReadMyProfileHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	foundUser, err := userProfileService.FindByUserId(currentUser.UserID)
+	if err != nil {
+		log.Error("FindByUserId %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
+	}
+	if foundUser == nil {
+		log.Error("Could not find user " + currentUser.UserID.String())
+		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
+	}
+
+	profileModel := models.MyProfileModel{
+		ObjectId:       foundUser.ObjectId,
+		FullName:       foundUser.FullName,
+		Avatar:         foundUser.Avatar,
+		Banner:         foundUser.Banner,
+		TagLine:        foundUser.TagLine,
+		Birthday:       foundUser.Birthday,
+		WebUrl:         foundUser.WebUrl,
+		CompanyName:    foundUser.CompanyName,
+		FacebookId:     foundUser.FacebookId,
+		InstagramId:    foundUser.InstagramId,
+		TwitterId:      foundUser.TwitterId,
+		AccessUserList: foundUser.AccessUserList,
+		Permission:     foundUser.Permission,
+	}
+	return c.JSON(profileModel)
+
 }
 
 // DispatchProfilesHandle a function invocation to read authed user profile
-func DispatchProfilesHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func DispatchProfilesHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-
-		// Parse model object
-		var model models.DispatchProfilesModel
-		if err := json.Unmarshal(req.Body, &model); err != nil {
-			errorMessage := fmt.Sprintf("Unmarshal  models.DispatchProfilesModel array %s", err.Error())
-			println(errorMessage)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("dispatchProfilesModelMarshalError", errorMessage)}, nil
-		}
-
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUsers, err := userProfileService.FindProfileByUserIds(model.UserIds)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		mappedUsers := make(map[string]interface{})
-		for _, v := range foundUsers {
-			mappedUser := make(map[string]interface{})
-			mappedUser["userId"] = v.ObjectId
-			mappedUser["fullName"] = v.FullName
-			mappedUser["avatar"] = v.Avatar
-			mappedUser["banner"] = v.Banner
-			mappedUser["tagLine"] = v.TagLine
-			mappedUser["lastSeen"] = v.LastSeen
-			mappedUser["createdDate"] = v.CreatedDate
-			mappedUsers[v.ObjectId.String()] = mappedUser
-		}
-
-		actionRoomPayload := &MembersPayload{
-			Users: mappedUsers,
-		}
-
-		activeRoomAction := Action{
-			Type:    "SET_USER_ENTITIES",
-			Payload: actionRoomPayload,
-		}
-
-		userInfoReq := &UserInfoInReq{
-			UserId:      req.UserID,
-			Username:    req.Username,
-			Avatar:      req.Avatar,
-			DisplayName: req.DisplayName,
-			SystemRole:  req.SystemRole,
-		}
-
-		go dispatchAction(activeRoomAction, userInfoReq)
-
-		return handler.Response{
-			StatusCode: http.StatusOK,
-		}, nil
+	// Parse model object
+	model := new(models.DispatchProfilesModel)
+	if err := c.BodyParser(model); err != nil {
+		errorMessage := fmt.Sprintf("Unmarshal  models.DispatchProfilesModel array %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/dispatchProfilesModelParser", "Error happened while parsing model!"))
 	}
+
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
+	}
+
+	foundUsers, err := userProfileService.FindProfileByUserIds(model.UserIds)
+	if err != nil {
+		log.Error("FindProfileByUserIds %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findProfileByUserIds", "Error happened while finding users profile!"))
+	}
+
+	mappedUsers := make(map[string]interface{})
+	for _, v := range foundUsers {
+		mappedUser := make(map[string]interface{})
+		mappedUser["userId"] = v.ObjectId
+		mappedUser["fullName"] = v.FullName
+		mappedUser["avatar"] = v.Avatar
+		mappedUser["banner"] = v.Banner
+		mappedUser["tagLine"] = v.TagLine
+		mappedUser["lastSeen"] = v.LastSeen
+		mappedUser["createdDate"] = v.CreatedDate
+		mappedUsers[v.ObjectId.String()] = mappedUser
+	}
+
+	actionRoomPayload := &MembersPayload{
+		Users: mappedUsers,
+	}
+
+	activeRoomAction := Action{
+		Type:    "SET_USER_ENTITIES",
+		Payload: actionRoomPayload,
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Warn("[DispatchProfilesHandle] Can not get current user")
+		currentUser = types.UserContext{}
+	}
+
+	userInfoReq := &UserInfoInReq{
+		UserId:      currentUser.UserID,
+		Username:    currentUser.Username,
+		Avatar:      currentUser.Avatar,
+		DisplayName: currentUser.DisplayName,
+		SystemRole:  currentUser.SystemRole,
+	}
+
+	go dispatchAction(activeRoomAction, userInfoReq)
+
+	return c.SendStatus(http.StatusOK)
+
 }
 
 // GetProfileByIds a function invocation to profiles by ids
-func GetProfileByIds(db interface{}) func(server.Request) (handler.Response, error) {
-	return func(req server.Request) (handler.Response, error) {
+func GetProfileByIds(c *fiber.Ctx) error {
 
-		// Parse model object
-		var model models.GetProfilesModel
-		if err := json.Unmarshal(req.Body, &model); err != nil {
-			errorMessage := fmt.Sprintf("Unmarshal  models.GetProfilesModel array %s", err.Error())
-			println(errorMessage)
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("getProfilesModelMarshalError", errorMessage)}, nil
-		}
-
-		// Create service
-		userProfileService, serviceErr := service.NewUserProfileService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundUsers, err := userProfileService.FindProfileByUserIds(model.UserIds)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		body, marshalErr := json.Marshal(foundUsers)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("Error while marshaling userProfiles: %s",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("marshalUserProfilesError", errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       body,
-			StatusCode: http.StatusOK,
-		}, nil
+	// Parse model object
+	model := new(models.GetProfilesModel)
+	if err := c.BodyParser(model); err != nil {
+		errorMessage := fmt.Sprintf("Unmarshal  models.GetProfilesModel array %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getProfilesModelParser", "Error happened while parsing model!"))
 	}
+
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
+	}
+
+	foundUsers, err := userProfileService.FindProfileByUserIds(model.UserIds)
+	if err != nil {
+		log.Error("FindByUserId %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
+	}
+
+	return c.JSON(foundUsers)
+
 }

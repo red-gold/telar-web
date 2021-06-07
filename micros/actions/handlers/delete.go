@@ -4,47 +4,55 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/actions/database"
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
 // DeleteActionRoomHandle handle delete a ActionRoom
-func DeleteActionRoomHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func DeleteActionRoomHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-
-		// params from /actions/room/:roomId
-		actionRoomId := req.GetParamByName("roomId")
-		if actionRoomId == "" {
-			errorMessage := fmt.Sprintf("ActionRoom Id is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("actionRoomIdRequired", errorMessage)}, nil
-		}
-		fmt.Printf("\n ActionRoom ID: %s", actionRoomId)
-		actionRoomUUID, uuidErr := uuid.FromString(actionRoomId)
-		if uuidErr != nil {
-			errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("uuidError", errorMessage)}, nil
-		}
-		fmt.Printf("\n ActionRoom UUID: %s", actionRoomUUID)
-		// Create service
-		actionRoomService, serviceErr := service.NewActionRoomService(db)
-		if serviceErr != nil {
-			errorMessage := fmt.Sprintf("ActionRoom Service Error %s", serviceErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("actionRoomServiceError", errorMessage)}, nil
-
-		}
-
-		if err := actionRoomService.DeleteActionRoomByOwner(req.UserID, actionRoomUUID); err != nil {
-			errorMessage := fmt.Sprintf("Delete ActionRoom Error %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("deleteActionRoomError", errorMessage)}, nil
-
-		}
-		return handler.Response{
-			Body:       []byte(`{"success": true}`),
-			StatusCode: http.StatusOK,
-		}, nil
+	// params from /actions/room/:roomId
+	actionRoomId := c.Params("roomId")
+	if actionRoomId == "" {
+		errorMessage := fmt.Sprintf("ActionRoom Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomIdRequired", "Action room is required!"))
 	}
+
+	actionRoomUUID, uuidErr := uuid.FromString(actionRoomId)
+	if uuidErr != nil {
+		errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("uuidError", "Can not parse uuid!"))
+	}
+
+	// Create service
+	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("ActionRoom Service Error %s", serviceErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("actionRoomService", "Error happend while creating action room service!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[DeleteActionRoomHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	if err := actionRoomService.DeleteActionRoomByOwner(currentUser.UserID, actionRoomUUID); err != nil {
+		errorMessage := fmt.Sprintf("Delete ActionRoom Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("actionRoomService", "Error happend while removing action room!"))
+
+	}
+
+	return c.SendStatus(http.StatusOK)
+
 }

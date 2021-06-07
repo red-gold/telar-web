@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	"github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
 	"github.com/red-gold/telar-core/utils"
 	appConfig "github.com/red-gold/telar-web/micros/storage/config"
 )
@@ -20,85 +20,78 @@ func init() {
 }
 
 // GetFileHandle a function invocation
-func GetFileHandle() func(http.ResponseWriter, *http.Request, server.Request) (handler.Response, error) {
+func GetFileHandle(c *fiber.Ctx) error {
 
-	return func(w http.ResponseWriter, r *http.Request, req server.Request) (handler.Response, error) {
+	storageConfig := &appConfig.StorageConfig
 
-		storageConfig := &appConfig.StorageConfig
+	// Initialize Redis Connection
+	if redisClient == nil {
 
-		// Initialize Redis Connection
-		if redisClient == nil {
+		redisPassword, redisErr := utils.ReadSecret("redis-pwd")
 
-			redisPassword, redisErr := utils.ReadSecret("redis-pwd")
-
-			if redisErr != nil {
-				fmt.Printf("\n\ncouldn't get payload-secret: %s\n\n", redisErr.Error())
-			}
-			fmt.Println(storageConfig.RedisAddress)
-			fmt.Println(redisPassword)
-			redisClient = redis.NewClient(&redis.Options{
-				Addr:     storageConfig.RedisAddress,
-				Password: redisPassword,
-				DB:       0,
-			})
-			pong, err := redisClient.Ping().Result()
-			fmt.Println(pong, err)
+		if redisErr != nil {
+			fmt.Printf("\n\ncouldn't get payload-secret: %s\n\n", redisErr.Error())
 		}
-
-		fmt.Println("File Upload Endpoint Hit")
-
-		dirName := req.GetParamByName("dir")
-		if dirName == "" {
-			errorMessage := fmt.Sprintf("Directory name is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("dirNameRequired", errorMessage)}, nil
-		}
-		fmt.Printf("\n Directory name: %s", dirName)
-
-		fileName := req.GetParamByName("name")
-		if fileName == "" {
-			errorMessage := fmt.Sprintf("File name is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("fileNameRequired", errorMessage)}, nil
-		}
-		fmt.Printf("\n File name: %s", fileName)
-
-		userId := req.GetParamByName("uid")
-		if userId == "" {
-			errorMessage := fmt.Sprintf("User Id is required!")
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: utils.MarshalError("userIdRequired", errorMessage)}, nil
-		}
-
-		fmt.Printf("\n User ID: %s", userId)
-		userUUID, uuidErr := uuid.FromString(userId)
-		if uuidErr != nil {
-			errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("uuidError", errorMessage)}, nil
-		}
-
-		objectName := fmt.Sprintf("%s/%s/%s", userUUID, dirName, fileName)
-
-		// Generate download URL
-		downloadURL, urlErr := generateV4GetObjectSignedURL(storageConfig.BucketName, objectName, storageConfig.StorageSecret)
-		if urlErr != nil {
-			fmt.Println(urlErr.Error())
-		}
-
-		code := 302 // Permanent redirect, request with GET method
-		if r.Method != http.MethodGet {
-			// Temporary redirect, request with same method
-			// As of Go 1.3, Go does not support status code 308.
-			code = 307
-		}
-		cacheSince := time.Now().Format(http.TimeFormat)
-		cacheUntil := time.Now().Add(time.Second * time.Duration(cacheTimeout)).Format(http.TimeFormat)
-		w.Header().Set("Cache-Control", fmt.Sprintf("max-age:%d, public", cacheTimeout))
-		w.Header().Set("Last-Modified", cacheSince)
-		w.Header().Set("Expires", cacheUntil)
-		http.Redirect(w, r, downloadURL, code)
-
-		return handler.Response{
-			StatusCode: http.StatusTemporaryRedirect,
-		}, nil
-
+		fmt.Println(storageConfig.RedisAddress)
+		fmt.Println(redisPassword)
+		redisClient = redis.NewClient(&redis.Options{
+			Addr:     storageConfig.RedisAddress,
+			Password: redisPassword,
+			DB:       0,
+		})
+		pong, err := redisClient.Ping().Result()
+		fmt.Println(pong, err)
 	}
+
+	log.Info("File Upload Endpoint Hit")
+
+	dirName := c.Params("dir")
+	if dirName == "" {
+		errorMessage := fmt.Sprintf("Directory name is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("dirNameRequired", "Directory name is required!"))
+	}
+
+	log.Info("Directory name: %s", dirName)
+
+	fileName := c.Params("name")
+	if fileName == "" {
+		errorMessage := fmt.Sprintf("File name is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("fileNameRequired", "File name is required!"))
+	}
+
+	log.Info("File name: %s", fileName)
+
+	userId := c.Params("uid")
+	if userId == "" {
+		errorMessage := fmt.Sprintf("User Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("fileNameRequired", "User id is required!"))
+	}
+
+	log.Info("\n User ID: %s", userId)
+	userUUID, uuidErr := uuid.FromString(userId)
+	if uuidErr != nil {
+		errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("uuidError", "can not parseUser id!"))
+	}
+
+	objectName := fmt.Sprintf("%s/%s/%s", userUUID, dirName, fileName)
+
+	// Generate download URL
+	downloadURL, urlErr := generateV4GetObjectSignedURL(storageConfig.BucketName, objectName, storageConfig.StorageSecret)
+	if urlErr != nil {
+		fmt.Println(urlErr.Error())
+	}
+
+	cacheSince := time.Now().Format(http.TimeFormat)
+	cacheUntil := time.Now().Add(time.Second * time.Duration(cacheTimeout)).Format(http.TimeFormat)
+
+	c.Set("Cache-Control", fmt.Sprintf("max-age:%d, public", cacheTimeout))
+	c.Set("Last-Modified", cacheSince)
+	c.Set("Expires", cacheUntil)
+	return c.Redirect(downloadURL, http.StatusTemporaryRedirect)
 
 }

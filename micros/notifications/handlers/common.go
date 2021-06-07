@@ -12,7 +12,7 @@ import (
 	"github.com/alexellis/hmac"
 	"github.com/gofrs/uuid"
 	coreConfig "github.com/red-gold/telar-core/config"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
 	notifyConfig "github.com/red-gold/telar-web/micros/notifications/config"
 	"github.com/red-gold/telar-web/micros/notifications/dto"
@@ -63,8 +63,8 @@ func functionCall(method string, bytesReq []byte, url string, header map[string]
 
 	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
 	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
+	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), types.HeaderHMACAuthenticate)
+	httpReq.Header.Add(types.HeaderHMACAuthenticate, "sha1="+hex.EncodeToString(digest))
 
 	if header != nil {
 		for k, v := range header {
@@ -152,7 +152,7 @@ func sendEmailNotification(model dto.Notification) error {
 	subject := fmt.Sprintf("%s Notification - %s", *coreConfig.AppConfig.AppName, title)
 	emailReq := utils.NewEmailRequest([]string{model.NotifyRecieverEmail}, subject, "")
 
-	emailResStatus, emailResErr := email.SendEmail(emailReq, "html_template/notify_email.html", struct {
+	emailResStatus, emailResErr := email.SendEmail(emailReq, "views/notify_email.html", struct {
 		AppName         string
 		AppURL          string
 		Title           string

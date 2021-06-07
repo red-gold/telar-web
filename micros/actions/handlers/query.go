@@ -1,112 +1,119 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
-	handler "github.com/openfaas-incubator/go-function-sdk"
-	server "github.com/red-gold/telar-core/server"
+	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
+	"github.com/red-gold/telar-web/micros/actions/database"
 	models "github.com/red-gold/telar-web/micros/actions/models"
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
 // GetActionRoomHandle handle get a actionRoom
-func GetActionRoomHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func GetActionRoomHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-
-		actionRoomId := req.GetParamByName("actionRoomId")
-		actionRoomUUID, uuidErr := uuid.FromString(actionRoomId)
-		if uuidErr != nil {
-			return handler.Response{StatusCode: http.StatusBadRequest,
-					Body: utils.MarshalError("parseUUIDError", "Can not parse actionRoom id!")},
-				nil
-		}
-		// Create service
-		actionRoomService, serviceErr := service.NewActionRoomService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		foundActionRoom, err := actionRoomService.FindById(actionRoomUUID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		actionRoomModel := models.ActionRoomModel{
-			ObjectId:    foundActionRoom.ObjectId,
-			OwnerUserId: foundActionRoom.OwnerUserId,
-			PrivateKey:  foundActionRoom.PrivateKey,
-			AccessKey:   foundActionRoom.AccessKey,
-			Status:      foundActionRoom.Status,
-			CreatedDate: foundActionRoom.CreatedDate,
-		}
-
-		body, marshalErr := json.Marshal(actionRoomModel)
-		if marshalErr != nil {
-			errorMessage := fmt.Sprintf("{error: 'Error while marshaling actionRoomModel: %s'}",
-				marshalErr.Error())
-			return handler.Response{StatusCode: http.StatusBadRequest, Body: []byte(errorMessage)},
-				marshalErr
-
-		}
-		return handler.Response{
-			Body:       []byte(body),
-			StatusCode: http.StatusOK,
-		}, nil
+	actionRoomId := c.Params("actionRoomId")
+	actionRoomUUID, uuidErr := uuid.FromString(actionRoomId)
+	if uuidErr != nil {
+		errorMessage := fmt.Sprintf("ActionRoom Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomIdRequired", "Action room is required!"))
 	}
+	// Create service
+	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("ActionRoom Service Error %s", serviceErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("actionRoomService", "Error happend while creating action room service!"))
+	}
+
+	foundActionRoom, err := actionRoomService.FindById(actionRoomUUID)
+	if err != nil {
+		log.Error("[actionRoomService.FindById] %s - %s ", actionRoomUUID.String(), err.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findActionRoom", "Can not find action room!"))
+	}
+
+	actionRoomModel := models.ActionRoomModel{
+		ObjectId:    foundActionRoom.ObjectId,
+		OwnerUserId: foundActionRoom.OwnerUserId,
+		PrivateKey:  foundActionRoom.PrivateKey,
+		AccessKey:   foundActionRoom.AccessKey,
+		Status:      foundActionRoom.Status,
+		CreatedDate: foundActionRoom.CreatedDate,
+	}
+
+	return c.JSON(actionRoomModel)
+
 }
 
 // GetAccessKeyHandle handle get access key
-func GetAccessKeyHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func GetAccessKeyHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-		// Create service
-		actionRoomService, serviceErr := service.NewActionRoomService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		accessKey, err := actionRoomService.GetAccessKey(req.UserID)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		return handler.Response{
-			Body:       []byte(fmt.Sprintf("{\"success\": true, \"accessKey\": \"%s\"}", accessKey)),
-			StatusCode: http.StatusOK,
-		}, nil
+	// Create service
+	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("ActionRoom Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomIdRequired", "Action room is required!"))
 	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[GetAccessKeyHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+	accessKey, err := actionRoomService.GetAccessKey(currentUser.UserID)
+	if err != nil {
+		log.Error("[actionRoomService.GetAccessKey] %s - %s", currentUser.UserID, err.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("getAccessKey", "Can not get access key!"))
+	}
+
+	return c.JSON(fiber.Map{
+		"accessKey": accessKey,
+	})
+
 }
 
 // VerifyAccessKeyHandle handle verify access key
-func VerifyAccessKeyHandle(db interface{}) func(server.Request) (handler.Response, error) {
+func VerifyAccessKeyHandle(c *fiber.Ctx) error {
 
-	return func(req server.Request) (handler.Response, error) {
-
-		var model models.ActionVerifyModel
-		if err := json.Unmarshal(req.Body, &model); err != nil {
-			errorMessage := fmt.Sprintf("Unmarshal ActionVerifyModel Error %s", err.Error())
-			return handler.Response{StatusCode: http.StatusInternalServerError, Body: utils.MarshalError("modelMarshalError", errorMessage)}, nil
-		}
-
-		// Create service
-		actionRoomService, serviceErr := service.NewActionRoomService(db)
-		if serviceErr != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, serviceErr
-		}
-
-		isVerified, err := actionRoomService.VerifyAccessKey(req.UserID, model.AccessKey)
-		if err != nil {
-			return handler.Response{StatusCode: http.StatusInternalServerError}, err
-		}
-
-		return handler.Response{
-			Body:       []byte(fmt.Sprintf("{\"success\": true, \"isVerified\": %t}", isVerified)),
-			StatusCode: http.StatusOK,
-		}, nil
+	model := new(models.ActionVerifyModel)
+	if err := c.BodyParser(model); err != nil {
+		errorMessage := fmt.Sprintf("Parse ActionVerifyModel Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("parseActionVerifyModel", "Error happend while parsing ActionVerifyModel!"))
 	}
+
+	// Create service
+	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
+	if serviceErr != nil {
+		errorMessage := fmt.Sprintf("ActionRoom Service Error %s", serviceErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("actionRoomService", "Error happend while creating action room service!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[VerifyAccessKeyHandle] Can not get current user")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	isVerified, err := actionRoomService.VerifyAccessKey(currentUser.UserID, model.AccessKey)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Verify accecc key Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("actionRoomService", "Error happend while verifying access key!"))
+	}
+
+	return c.JSON(fiber.Map{
+		"isVerified": isVerified,
+	})
+
 }

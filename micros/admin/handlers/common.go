@@ -9,10 +9,11 @@ import (
 	"strings"
 
 	"github.com/alexellis/hmac"
+	"github.com/gofiber/fiber/v2"
 	coreConfig "github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/types"
 	ac "github.com/red-gold/telar-web/micros/admin/config"
 
-	server "github.com/red-gold/telar-core/server"
 	utils "github.com/red-gold/telar-core/utils"
 )
 
@@ -32,8 +33,8 @@ func functionCall(bytesReq []byte, url, method string) ([]byte, error) {
 
 	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
 	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
+	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), types.HeaderHMACAuthenticate)
+	httpReq.Header.Add(types.HeaderHMACAuthenticate, "sha1="+hex.EncodeToString(digest))
 
 	c := http.Client{}
 	res, reqErr := c.Do(httpReq)
@@ -70,8 +71,8 @@ func functionCallByHeader(method string, bytesReq []byte, url string, header map
 
 	digest := hmac.Sign(bytesReq, []byte(payloadSecret))
 	httpReq.Header.Set("Content-type", "application/json")
-	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), server.X_Cloud_Signature)
-	httpReq.Header.Add(server.X_Cloud_Signature, "sha1="+hex.EncodeToString(digest))
+	fmt.Printf("\ndigest: %s, header: %v \n", "sha1="+hex.EncodeToString(digest), types.HeaderHMACAuthenticate)
+	httpReq.Header.Add(types.HeaderHMACAuthenticate, "sha1="+hex.EncodeToString(digest))
 	if header != nil {
 		for k, v := range header {
 			httpReq.Header[k] = v
@@ -100,33 +101,37 @@ func functionCallByHeader(method string, bytesReq []byte, url string, header map
 }
 
 // writeTokenOnCookie wite session on cookie
-func writeSessionOnCookie(w http.ResponseWriter, session string, adminConfig *ac.Configuration) {
+func writeSessionOnCookie(c *fiber.Ctx, session string, config *ac.Configuration) {
 	appConfig := coreConfig.AppConfig
 	parts := strings.Split(session, ".")
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
+	headerCookie := &fiber.Cookie{
+		HTTPOnly: true,
 		Name:     *appConfig.HeaderCookieName,
 		Value:    parts[0],
 		Path:     "/",
 		// Expires:  time.Now().Add(config.CookieExpiresIn),
-		Domain: adminConfig.CookieRootDomain,
-	})
+		Domain: config.CookieRootDomain,
+	}
 
-	http.SetCookie(w, &http.Cookie{
+	payloadCookie := &fiber.Cookie{
 		// HttpOnly: true,
 		Name:  *appConfig.PayloadCookieName,
 		Value: parts[1],
 		Path:  "/",
-		// Expires:  time.Now().Add(config.CookieExpiresIn),
-		Domain: adminConfig.CookieRootDomain,
-	})
+		// Expires: time.Now().Add(config.CookieExpiresIn),
+		Domain: config.CookieRootDomain,
+	}
 
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
+	signCookie := &fiber.Cookie{
+		HTTPOnly: true,
 		Name:     *appConfig.SignatureCookieName,
 		Value:    parts[2],
 		Path:     "/",
 		// Expires:  time.Now().Add(config.CookieExpiresIn),
-		Domain: adminConfig.CookieRootDomain,
-	})
+		Domain: config.CookieRootDomain,
+	}
+	// Set cookie
+	c.Cookie(headerCookie)
+	c.Cookie(payloadCookie)
+	c.Cookie(signCookie)
 }
