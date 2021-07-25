@@ -42,7 +42,7 @@ func QueryUserSettingHandle(c *fiber.Ctx) error {
 	userSettingList, err := userSettingService.QueryUserSetting(query.Search, &query.Owner, &query.Type, "created_date", query.Page)
 	if err != nil {
 		log.Error("[QueryUserSetting] %s ", err.Error())
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("queryUserSetting", "Can not query user setting!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("queryUserSetting", "Can not query user setting!"))
 	}
 
 	return c.JSON(userSettingList)
@@ -69,7 +69,7 @@ func GetAllUserSetting(c *fiber.Ctx) error {
 	userSettingList, err := userSettingService.GetAllUserSetting(currentUser.UserID)
 	if err != nil {
 		log.Error("[GetAllUserSetting] %s ", err.Error())
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("getAllUserSetting", "Can not get user settings!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("getAllUserSetting", "Can not get user settings!"))
 	}
 
 	groupSettingsMap := make(map[string][]models.GetSettingGroupItemModel)
@@ -115,7 +115,7 @@ func GetAllUserSettingByType(c *fiber.Ctx) error {
 	userSettingList, err := userSettingService.GetAllUserSettingByType(currentUser.UserID, settingType)
 	if err != nil {
 		log.Error("[GetAllUserSettingByType] %s ", err.Error())
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("getAllUserSettingByType", "Can not get user settings by type!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("getAllUserSettingByType", "Can not get user settings by type!"))
 	}
 
 	var groupSettingItems []models.GetSettingGroupItemModel
@@ -160,7 +160,7 @@ func GetUserSettingHandle(c *fiber.Ctx) error {
 	foundUserSetting, err := userSettingService.FindById(userSettingUUID)
 	if err != nil {
 		log.Error("[userSettingService.FindById] %s ", err.Error())
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserSetting", "Can not find user settings by id!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserSetting", "Can not find user settings by id!"))
 	}
 
 	currentUser, ok := c.Locals("user").(types.UserContext)
@@ -213,7 +213,7 @@ func GetSettingByUserIds(c *fiber.Ctx) error {
 	foundUserSetting, err := userSettingService.FindSettingByUserIds(model.UserIds, model.Type)
 	if err != nil {
 		log.Error("[userSettingService.FindSettingByUserIds] %s ", err.Error())
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserSetting", "Can not find users settings by ids!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserSetting", "Can not find users settings by ids!"))
 	}
 
 	mappedSetting := make(map[string]string)

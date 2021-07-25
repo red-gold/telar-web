@@ -10,6 +10,7 @@ type CreateNotificationModel struct {
 	OwnerDisplayName     string    `json:"ownerDisplayName"`
 	OwnerAvatar          string    `json:"ownerAvatar"`
 	CreatedDate          int64     `json:"created_date"`
+	Title                string    `json:"title"`
 	Description          string    `json:"description"`
 	URL                  string    `json:"url"`
 	NotifyRecieverUserId uuid.UUID `json:"notifyRecieverUserId"`

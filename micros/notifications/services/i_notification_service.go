@@ -21,8 +21,9 @@ type NotificationService interface {
 	DeleteNotificationByOwner(notificationReceiverId uuid.UUID, notificationId uuid.UUID) error
 	DeleteManyNotifications(filter interface{}) error
 	CreateNotificationIndex(indexes map[string]interface{}) error
-	GetNotificationByUserId(userId *uuid.UUID, sortBy string, page int64) ([]dto.Notification, error)
+	GetNotificationByUserId(userId *uuid.UUID, sortBy string, page int64, limit int64) ([]dto.Notification, error)
 	GetLastNotifications() ([]dto.Notification, error)
 	SeenNotification(objectId uuid.UUID, userId uuid.UUID) error
+	SeenAllNotifications(userId uuid.UUID) error
 	DeleteNotificationsByUserId(userId uuid.UUID) error
 }

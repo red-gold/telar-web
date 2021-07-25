@@ -26,6 +26,7 @@ const (
 	sendEmailOnLike         = "send_email_on_like"
 	sendEmailOnFollow       = "send_email_on_follow"
 	sendEmailOnComment      = "send_email_on_comment_post"
+	sendEmailAppNews        = "send_email_app_news"
 	notificationSettingType = "notification"
 )
 
@@ -33,6 +34,7 @@ var settingMappedFromNotify = map[string]string{
 	likeNotifyType:    sendEmailOnLike,
 	followNotifyType:  sendEmailOnFollow,
 	commentNotifyType: sendEmailOnComment,
+	sendEmailAppNews:  sendEmailAppNews,
 }
 
 type UserInfoInReq struct {

@@ -25,8 +25,7 @@ func UpdateProfileHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
 	}
 
-	model := new(models.ProfileUpdateModel)
-	unmarshalErr := c.BodyParser(model)
+	model, unmarshalErr := getUpdateModel(c)
 	if unmarshalErr != nil {
 		errorMessage := fmt.Sprintf("Error while un-marshaling ProfileUpdateModel: %s",
 			unmarshalErr.Error())
@@ -34,6 +33,8 @@ func UpdateProfileHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/parseProfileUpdateModel", "Error while parsing body"))
 
 	}
+	log.Info("model %v", model)
+
 	currentUser, ok := c.Locals("user").(types.UserContext)
 	if !ok {
 		log.Error("[UpdateProfileHandle] Can not get current user")
@@ -41,33 +42,8 @@ func UpdateProfileHandle(c *fiber.Ctx) error {
 			"Can not get current user"))
 	}
 
-	foundUserProfile, profileErr := userProfileService.FindByUserId(currentUser.UserID)
-	if foundUserProfile == nil {
-		log.Error("Could not find user " + currentUser.UserID.String())
-		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Could not find user "+currentUser.UserID.String()))
-
-	}
-	if profileErr != nil {
-		errorMessage := fmt.Sprintf("Find profile Error %s",
-			profileErr.Error())
-		log.Error(errorMessage)
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("findProfileError", "Could not find user "+currentUser.UserID.String()))
-	}
-
-	foundUserProfile.FullName = model.FullName
-	foundUserProfile.Avatar = model.Avatar
-	foundUserProfile.Banner = model.Banner
-	foundUserProfile.TagLine = model.TagLine
-	foundUserProfile.Birthday = model.Birthday
-	foundUserProfile.WebUrl = model.WebUrl
-	foundUserProfile.CompanyName = model.CompanyName
-	foundUserProfile.FacebookId = model.FacebookId
-	foundUserProfile.InstagramId = model.InstagramId
-	foundUserProfile.TwitterId = model.TwitterId
-	foundUserProfile.AccessUserList = model.AccessUserList
-	foundUserProfile.Permission = model.Permission
-
-	err := userProfileService.UpdateUserProfileById(currentUser.UserID, foundUserProfile)
+	log.Info("Update profile %s - %v", currentUser.UserID, model)
+	err := userProfileService.UpdateUserProfileById(currentUser.UserID, model)
 	if err != nil {
 		log.Error("Could not update user profile! %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Could not update user profile!"))
@@ -113,18 +89,18 @@ func UpdateLastSeen(c *fiber.Ctx) error {
 func IncreaseFollowCount(c *fiber.Ctx) error {
 
 	// params from /follow/inc/:inc/:userId
-	postId := c.Params("userId")
-	if postId == "" {
+	userId := c.Params("userId")
+	if userId == "" {
 		errorMessage := fmt.Sprintf("User Id is required!")
 		log.Error(errorMessage)
 		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdRequired", errorMessage))
 	}
 
-	userUUID, uuidErr := uuid.FromString(postId)
+	userUUID, uuidErr := uuid.FromString(userId)
 	if uuidErr != nil {
 		errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("postIdIsNotValid", "Post id is not valid!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdIsNotValid", "Post id is not valid!"))
 	}
 
 	incParam := c.Params("inc")
@@ -158,18 +134,18 @@ func IncreaseFollowCount(c *fiber.Ctx) error {
 func IncreaseFollowerCount(c *fiber.Ctx) error {
 
 	// params from /follower/inc/:inc/:userId
-	postId := c.Params("userId")
-	if postId == "" {
+	userId := c.Params("userId")
+	if userId == "" {
 		errorMessage := fmt.Sprintf("User Id is required!")
 		log.Error(errorMessage)
 		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdRequired", errorMessage))
 	}
 
-	userUUID, uuidErr := uuid.FromString(postId)
+	userUUID, uuidErr := uuid.FromString(userId)
 	if uuidErr != nil {
 		errorMessage := fmt.Sprintf("UUID Error %s", uuidErr.Error())
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("postIdIsNotValid", "Post id is not valid!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdIsNotValid", "Post id is not valid!"))
 	}
 
 	incParam := c.Params("inc")

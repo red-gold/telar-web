@@ -41,12 +41,12 @@ func ResetPasswordPageHandler(c *fiber.Ctx) error {
 
 	foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
 	if findErr != nil {
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findVerification", findErr.Error()))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findVerification", findErr.Error()))
 	}
 
 	foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
 	if userAuthErr != nil {
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
 	}
 
 	if foundUserAuth == nil {
@@ -236,12 +236,12 @@ func ResetPasswordFormHandler(c *fiber.Ctx) error {
 
 	foundVerification, findErr := userVerificationService.FindByVerifyId(verifyUUID)
 	if findErr != nil {
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findVerification", findErr.Error()))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findVerification", findErr.Error()))
 	}
 
 	foundUserAuth, userAuthErr := userAuthService.FindByUserId(foundVerification.UserId)
 	if userAuthErr != nil {
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
 	}
 	if foundUserAuth == nil {
 		errorMessage := fmt.Sprintf("User auth not found %s", foundVerification.UserId)

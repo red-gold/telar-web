@@ -12,8 +12,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
 	coreConfig "github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/pkg/parser"
 	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
+	models "github.com/red-gold/telar-web/micros/profile/models"
 )
 
 type Action struct {
@@ -28,6 +30,25 @@ type UserInfoInReq struct {
 	DisplayName string    `json:"displayName"`
 	SystemRole  string    `json:"systemRole"`
 }
+
+// contains
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+type UpdateProfileQueryModel struct {
+	UpdateType int `query:"updateType"`
+}
+
+const UpdateAllType = 0
+const UpdateGeneralType = 1
+const UpdateSocialInfoType = 2
 
 // getHeadersFromUserInfoReq
 func getHeadersFromUserInfoReq(info *UserInfoInReq) map[string][]string {
@@ -128,4 +149,42 @@ func functionCall(method string, bytesReq []byte, url string, header map[string]
 	}
 
 	return resData, nil
+}
+
+// getUpdateModel
+func getUpdateModel(c *fiber.Ctx) (interface{}, error) {
+
+	query := new(UpdateProfileQueryModel)
+
+	if err := parser.QueryParser(c, query); err != nil {
+		return nil, err
+	}
+
+	if query.UpdateType == UpdateSocialInfoType {
+		model := new(models.SocialInfoUpdateModel)
+		unmarshalErr := c.BodyParser(model)
+		if unmarshalErr != nil {
+			return nil, unmarshalErr
+		}
+
+		model.LastUpdated = utils.UTCNowUnix()
+
+		return model, nil
+	} else if query.UpdateType == UpdateGeneralType {
+		model := new(models.ProfileGeneralUpdateModel)
+		unmarshalErr := c.BodyParser(model)
+		if unmarshalErr != nil {
+			return nil, unmarshalErr
+		}
+		model.LastUpdated = utils.UTCNowUnix()
+		return model, nil
+	}
+	model := new(models.ProfileUpdateModel)
+	unmarshalErr := c.BodyParser(model)
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
+	}
+	model.LastUpdated = utils.UTCNowUnix()
+	return model, nil
+
 }

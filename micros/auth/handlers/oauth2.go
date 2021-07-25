@@ -82,6 +82,7 @@ func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *st
 		newUserProfile := &models.UserProfileModel{
 			ObjectId:    newUserId,
 			FullName:    model.profile.Name,
+			SocialName:  generateSocialName(model.profile.Name, newUserId.String()),
 			CreatedDate: createdDate,
 			LastUpdated: createdDate,
 			Email:       model.profile.Email,
@@ -105,6 +106,9 @@ func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *st
 			UserId:      newUserAuth.ObjectId.String(),
 			Role:        newUserAuth.Role,
 			Avatar:      newUserProfile.Avatar,
+			Banner:      newUserProfile.Banner,
+			TagLine:     newUserProfile.TagLine,
+			CreatedDate: newUserProfile.CreatedDate,
 		}
 	} else {
 
@@ -153,6 +157,9 @@ func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *st
 			UserId:      userAuth.ObjectId.String(),
 			Role:        userAuth.Role,
 			Avatar:      profileResult.Profile.Avatar,
+			Banner:      profileResult.Profile.Banner,
+			TagLine:     profileResult.Profile.TagLine,
+			CreatedDate: userAuth.CreatedDate,
 		}
 
 	}

@@ -8,6 +8,7 @@ import (
 type UserProfileModel struct {
 	ObjectId       uuid.UUID                     `json:"objectId" bson:"objectId"`
 	FullName       string                        `json:"fullName" bson:"fullName"`
+	SocialName     string                        `json:"socialName" bson:"socialName"`
 	Avatar         string                        `json:"avatar" bson:"avatar"`
 	Banner         string                        `json:"banner" bson:"banner"`
 	TagLine        string                        `json:"tagLine" bson:"tagLine"`

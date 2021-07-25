@@ -10,6 +10,7 @@ type Notification struct {
 	OwnerDisplayName     string    `json:"ownerDisplayName" bson:"ownerDisplayName"`
 	OwnerAvatar          string    `json:"ownerAvatar" bson:"ownerAvatar"`
 	CreatedDate          int64     `json:"created_date" bson:"created_date"`
+	Title                string    `json:"title" bson:"title"`
 	Description          string    `json:"description" bson:"description"`
 	URL                  string    `json:"url" bson:"url"`
 	NotifyRecieverUserId uuid.UUID `json:"notifyRecieverUserId" bson:"notifyRecieverUserId"`

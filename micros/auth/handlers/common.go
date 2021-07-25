@@ -44,10 +44,14 @@ type htmlTemplate struct {
 // User information claim
 type UserClaim struct {
 	DisplayName   string `json:"displayName"`
+	SocialName    string `json:"socialName"`
 	Organizations string `json:"organizations"`
 	Avatar        string `json:"avatar"`
+	Banner        string `json:"banner"`
+	TagLine       string `json:"tagLine"`
 	UserId        string `json:"uid"`
 	Email         string `json:"email"`
+	CreatedDate   int64  `json:"createdDate"`
 	Role          string `json:"role"`
 }
 
@@ -106,6 +110,14 @@ type UsersLangSettingsResultAsync struct {
 	settings map[string]string
 	Error    error
 }
+
+type UpdateProfileQueryModel struct {
+	UpdateType int `query:"updateType"`
+}
+
+const UpdateAllType = 0
+const UpdateGeneralType = 1
+const UpdateSocialInfoType = 2
 
 // getHeadersFromUserInfoReq
 func getHeadersFromUserInfoReq(info *UserInfoInReq) map[string][]string {
@@ -203,7 +215,7 @@ func generateResetPasswordToken(verifyId string) (string, error) {
 
 }
 
-func buildGitHubURL(config *authConfig.Configuration, string, scope string) *url.URL {
+func buildGitHubURL(config *authConfig.Configuration, resource string, scope string) *url.URL {
 	authURL := "https://github.com/login/oauth/authorize"
 	u, _ := url.Parse(authURL)
 	q := u.Query()
@@ -214,7 +226,9 @@ func buildGitHubURL(config *authConfig.Configuration, string, scope string) *url
 	q.Set("client_id", config.ClientID)
 
 	redirectURI := combineURL(config.AuthWebURI, utils.GetPrettyURLf(config.BaseRoute+"/oauth2/authorized"))
-
+	if len(resource) > 0 {
+		redirectURI = redirectURI + "?r=" + resource
+	}
 	q.Set("redirect_uri", redirectURI)
 
 	u.RawQuery = q.Encode()
@@ -482,6 +496,10 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 						Name:  "send_email_on_comment_post",
 						Value: "false",
 					},
+					{
+						Name:  "send_email_app_news",
+						Value: "true",
+					},
 				},
 			},
 			{
@@ -577,20 +595,10 @@ func saveUserProfile(model *models.UserProfileModel) error {
 }
 
 // updateUserProfile Update user profile
-func updateUserProfile(model *models.ProfileUpdateModel, userId uuid.UUID, email, avatar, displayName, role string) error {
-	profileURL := "/profile"
-	data, err := json.Marshal(model)
-	if err != nil {
-		log.Error("marshal models.UserProfileModel %s", err.Error())
-		return fmt.Errorf("saveProfile/marshalUserProfileModel")
-	}
-	headers := make(map[string][]string)
-	headers["uid"] = []string{userId.String()}
-	headers["email"] = []string{email}
-	headers["avatar"] = []string{avatar}
-	headers["displayName"] = []string{displayName}
-	headers["role"] = []string{role}
-	_, err = functionCall(http.MethodPut, data, profileURL, headers)
+func updateUserProfile(data []byte, updateType int, userInfoInReq *UserInfoInReq) error {
+	profileURL := fmt.Sprintf("/profile?updateType=%d", updateType)
+
+	_, err := functionCall(http.MethodPut, data, profileURL, getHeadersFromUserInfoReq(userInfoInReq))
 	if err != nil {
 		log.Error("functionCall (%s) -  %s", profileURL, err.Error())
 		return fmt.Errorf("updateUserProfile/functionCall")
@@ -659,4 +667,9 @@ func readLanguageSettingAsync(userID uuid.UUID, userInfoInReq *UserInfoInReq) <-
 
 	}()
 	return r
+}
+
+// generateSocialName
+func generateSocialName(name, uid string) string {
+	return strings.ToLower(strings.ReplaceAll(name, " ", "") + strings.Split(uid, "-")[0])
 }

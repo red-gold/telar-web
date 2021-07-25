@@ -271,7 +271,7 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 	email := utils.NewEmail(*coreConfig.RefEmail, *coreConfig.RefEmailPass, *coreConfig.SmtpEmail)
 	emailReq := utils.NewEmailRequest([]string{input.EmailTo}, input.EmailSubject, input.HtmlTmplPath)
 
-	code := utils.GenerateDigits(4)
+	code := utils.GenerateDigits(6)
 	emailResStatus, emailResErr := email.SendEmail(emailReq, input.HtmlTmplPath, struct {
 		Name      string
 		AppName   string
@@ -339,7 +339,7 @@ func (s UserVerificationServiceImpl) CreatePhoneVerficationToken(input PhoneVeri
 	if phoneErr != nil {
 		return "", phoneErr
 	}
-	code := utils.GenerateDigits(4)
+	code := utils.GenerateDigits(6)
 	_, SmsErr := phone.SendSms(input.PhoneNumber, code)
 
 	if SmsErr != nil {

@@ -3,17 +3,22 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
 	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/pkg/parser"
 	"github.com/red-gold/telar-core/types"
 	utils "github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/micros/notifications/database"
 	models "github.com/red-gold/telar-web/micros/notifications/models"
 	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
+
+type UserProfileQueryModel struct {
+	Limit int64 `query:"limit"`
+	Page  int64 `query:"page"`
+}
 
 // GetNotificationsByUserIdHandle handle query on notification
 func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
@@ -25,16 +30,11 @@ func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/notificationService", "Error happened while creating notificationService!"))
 	}
 
-	pageParam := c.Query("page")
+	query := new(UserProfileQueryModel)
 
-	page := 0
-	if pageParam != "" {
-		var strErr error
-		page, strErr = strconv.Atoi(pageParam)
-		if strErr != nil {
-			log.Error("[GetNotificationsByUserIdHandle.strconv.Atoi] %s", strErr.Error())
-			return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal", "Error happened while parsing page!"))
-		}
+	if err := parser.QueryParser(c, query); err != nil {
+		log.Error("[GetNotificationsByUserIdHandle] QueryParser %s", err.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("queryParser", "Error happened while parsing query!"))
 	}
 
 	currentUser, ok := c.Locals("user").(types.UserContext)
@@ -44,7 +44,8 @@ func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 			"Can not get current user"))
 	}
 
-	notificationList, err := notificationService.GetNotificationByUserId(&currentUser.UserID, "created_date", int64(page))
+	notificationList, err := notificationService.GetNotificationByUserId(&currentUser.UserID, "created_date", query.Page, query.Limit)
+
 	if err != nil {
 		log.Error("[GetNotificationsByUserIdHandle.GetNotificationByUserId] %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getNotificationByUserId", "Error happened while reading notification!"))
@@ -90,6 +91,7 @@ func GetNotificationHandle(c *fiber.Ctx) error {
 		OwnerUserId:          currentUser.UserID,
 		OwnerDisplayName:     currentUser.DisplayName,
 		OwnerAvatar:          currentUser.Avatar,
+		Title:                foundNotification.Title,
 		Description:          foundNotification.Description,
 		URL:                  foundNotification.URL,
 		NotifyRecieverUserId: foundNotification.NotifyRecieverUserId,

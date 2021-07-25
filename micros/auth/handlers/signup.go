@@ -191,10 +191,11 @@ func AdminSignupHandle(c *fiber.Ctx) error {
 		log.Error(errorMessage)
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("saveUserAuthError", "Cannot save user authentication!"))
 	}
-
+	socialName := generateSocialName(fullName, userUUID.String())
 	newUserProfile := &models.UserProfileModel{
 		ObjectId:    userUUID,
 		FullName:    fullName,
+		SocialName:  socialName,
 		CreatedDate: createdDate,
 		LastUpdated: createdDate,
 		Email:       email,
@@ -222,9 +223,13 @@ func AdminSignupHandle(c *fiber.Ctx) error {
 		organizationList: "Telar",
 		claim: UserClaim{
 			DisplayName: fullName,
+			SocialName:  socialName,
 			Email:       email,
 			UserId:      userUUID.String(),
+			Banner:      newUserProfile.Banner,
+			TagLine:     newUserProfile.TagLine,
 			Role:        "admin",
+			CreatedDate: newUserProfile.CreatedDate,
 		},
 	}
 	session, sessionErr := createToken(tokenModel)

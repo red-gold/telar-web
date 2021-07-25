@@ -51,6 +51,7 @@ func CreateNotificationHandle(c *fiber.Ctx) error {
 		OwnerUserId:          currentUser.UserID,
 		OwnerDisplayName:     currentUser.DisplayName,
 		OwnerAvatar:          currentUser.Avatar,
+		Title:                model.Title,
 		Description:          model.Description,
 		URL:                  model.URL,
 		NotifyRecieverUserId: model.NotifyRecieverUserId,

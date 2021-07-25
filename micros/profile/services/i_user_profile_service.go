@@ -12,9 +12,10 @@ type UserProfileService interface {
 	QueryUserProfile(search string, sortBy string, page int64, notIncludeUserIDList []uuid.UUID) ([]dto.UserProfile, error)
 	FindProfileByUserIds(userIds []uuid.UUID) ([]dto.UserProfile, error)
 	FindByUserId(userId uuid.UUID) (*dto.UserProfile, error)
+	FindBySocialName(socialName string) (*dto.UserProfile, error)
 	UpdateUserProfile(filter interface{}, data interface{}) error
 	UpdateLastSeenNow(userId uuid.UUID) error
-	UpdateUserProfileById(userId uuid.UUID, data *dto.UserProfile) error
+	UpdateUserProfileById(userId uuid.UUID, data interface{}) error
 	DeleteUserProfile(filter interface{}) error
 	DeleteManyUserProfile(filter interface{}) error
 	FindByUsername(username string) (*dto.UserProfile, error)

@@ -39,7 +39,7 @@ func VerifySignupHandle(c *fiber.Ctx) error {
 		ResponseType: c.FormValue("responseType"),
 	}
 
-	if model.ResponseType == "spa" {
+	if model.ResponseType == SPAResponseType {
 		return VerifySignupSPA(c, model)
 	}
 	return VerifySignupSSR(c, model)
@@ -149,10 +149,11 @@ func VerifySignupSPA(c *fiber.Ctx, model *models.VerifySignupModel) error {
 		log.Error(errorMessage)
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal", "Error happened during verification!"))
 	}
-
+	socialName := generateSocialName(fullName, userId)
 	newUserProfile := &models.UserProfileModel{
 		ObjectId:    userUUID,
 		FullName:    fullName,
+		SocialName:  socialName,
 		CreatedDate: createdDate,
 		LastUpdated: createdDate,
 		Email:       email,
@@ -171,32 +172,7 @@ func VerifySignupSPA(c *fiber.Ctx, model *models.VerifySignupModel) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("initUserSetupError", fmt.Sprintf("Cannot initialize user setup! error: %s", setupErr.Error())))
 	}
 
-	tokenModel := &TokenModel{
-		token:            ProviderAccessToken{},
-		oauthProvider:    nil,
-		providerName:     *coreConfig.AppConfig.AppName,
-		profile:          &provider.Profile{Name: fullName, ID: userId, Login: email},
-		organizationList: *coreConfig.AppConfig.OrgName,
-		claim: UserClaim{
-			DisplayName: fullName,
-			Email:       email,
-			UserId:      userId,
-			Role:        "user",
-		},
-	}
-	session, sessionErr := createToken(tokenModel)
-	if sessionErr != nil {
-		errorMessage := fmt.Sprintf("Error creating session error: %s",
-			sessionErr.Error())
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("initUserSetupError", errorMessage))
-
-	}
-
-	log.Info("\nSession is created: %s \n", session)
-	webURL := authConfig.AuthConfig.ExternalRedirectDomain
-	return c.Render("redirect", fiber.Map{
-		"URL": webURL,
-	})
+	return c.SendStatus(http.StatusOK)
 }
 
 func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
@@ -312,9 +288,11 @@ func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
 		return renderCodeVerify(c, signupVerifyData)
 	}
 
+	socialName := generateSocialName(fullName, userId)
 	newUserProfile := &models.UserProfileModel{
 		ObjectId:    userUUID,
 		FullName:    fullName,
+		SocialName:  socialName,
 		CreatedDate: createdDate,
 		LastUpdated: createdDate,
 		Email:       email,
@@ -341,9 +319,13 @@ func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
 		organizationList: *coreConfig.AppConfig.OrgName,
 		claim: UserClaim{
 			DisplayName: fullName,
+			SocialName:  socialName,
 			Email:       email,
 			UserId:      userId,
 			Role:        "user",
+			Banner:      newUserProfile.Banner,
+			TagLine:     newUserProfile.TagLine,
+			CreatedDate: newUserProfile.CreatedDate,
 		},
 	}
 	session, sessionErr := createToken(tokenModel)

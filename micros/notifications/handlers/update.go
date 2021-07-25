@@ -15,7 +15,7 @@ import (
 	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
 
-// UpdateNotificationHandle handle create a new notification
+// UpdateNotificationHandle handle update a notification
 func UpdateNotificationHandle(c *fiber.Ctx) error {
 
 	// Create the model object
@@ -44,6 +44,7 @@ func UpdateNotificationHandle(c *fiber.Ctx) error {
 		OwnerUserId:          currentUser.UserID,
 		OwnerDisplayName:     currentUser.DisplayName,
 		OwnerAvatar:          currentUser.Avatar,
+		Title:                model.Title,
 		Description:          model.Description,
 		URL:                  model.URL,
 		NotifyRecieverUserId: model.NotifyRecieverUserId,
@@ -63,7 +64,7 @@ func UpdateNotificationHandle(c *fiber.Ctx) error {
 
 }
 
-// SeenNotificationHandle handle create a new notification
+// SeenNotificationHandle handle set notification seen
 func SeenNotificationHandle(c *fiber.Ctx) error {
 
 	// params from /notifications/seen/:notificationId
@@ -71,7 +72,7 @@ func SeenNotificationHandle(c *fiber.Ctx) error {
 	if notificationId == "" {
 		errorMessage := fmt.Sprintf("Notification Id is required!")
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("notificationIdRequired", "Notification id is required!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("notificationIdRequired", "Notification id is required!"))
 	}
 
 	notificationUUID, uuidErr := uuid.FromString(notificationId)
@@ -95,6 +96,33 @@ func SeenNotificationHandle(c *fiber.Ctx) error {
 	}
 
 	if err := notificationService.SeenNotification(notificationUUID, currentUser.UserID); err != nil {
+		errorMessage := fmt.Sprintf("Update Notification Error %s", err.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/updateNotification", "Can not update notification!"))
+	}
+
+	return c.SendStatus(http.StatusOK)
+
+}
+
+// SeenAllNotificationsHandle handle set all notifications seen
+func SeenAllNotificationsHandle(c *fiber.Ctx) error {
+
+	// Create service
+	notificationService, serviceErr := service.NewNotificationService(database.Db)
+	if serviceErr != nil {
+		log.Error("[SeenAllNotificationHandle.NewNotificationService] %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/notificationService", "Error happened while creating notificationService!"))
+	}
+
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		log.Error("[SeenAllNotificationHandle] Can not get current user")
+		return c.Status(http.StatusUnauthorized).JSON(utils.Error("invalidCurrentUser",
+			"Can not get current user"))
+	}
+
+	if err := notificationService.SeenAllNotifications(currentUser.UserID); err != nil {
 		errorMessage := fmt.Sprintf("Update Notification Error %s", err.Error())
 		log.Error(errorMessage)
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/updateNotification", "Can not update notification!"))

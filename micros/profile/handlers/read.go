@@ -54,6 +54,11 @@ func ReadDtoProfileHandle(c *fiber.Ctx) error {
 func ReadProfileHandle(c *fiber.Ctx) error {
 
 	userId := c.Params("userId")
+	if userId == "" {
+		errorMessage := fmt.Sprintf("User Id is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdRequired", errorMessage))
+	}
 	userUUID, uuidErr := uuid.FromString(userId)
 	if uuidErr != nil {
 		log.Error("Parse UUID %s ", uuidErr.Error())
@@ -81,17 +86,79 @@ func ReadProfileHandle(c *fiber.Ctx) error {
 	profileModel := models.MyProfileModel{
 		ObjectId:       foundUser.ObjectId,
 		FullName:       foundUser.FullName,
+		SocialName:     foundUser.SocialName,
 		Avatar:         foundUser.Avatar,
 		Banner:         foundUser.Banner,
 		TagLine:        foundUser.TagLine,
 		Birthday:       foundUser.Birthday,
+		Address:        foundUser.Address,
+		LastSeen:       foundUser.LastSeen,
+		FollowCount:    foundUser.FollowCount,
+		FollowerCount:  foundUser.FollowerCount,
 		WebUrl:         foundUser.WebUrl,
 		CompanyName:    foundUser.CompanyName,
 		FacebookId:     foundUser.FacebookId,
 		InstagramId:    foundUser.InstagramId,
 		TwitterId:      foundUser.TwitterId,
+		LinkedInId:     foundUser.LinkedInId,
 		AccessUserList: foundUser.AccessUserList,
 		Permission:     foundUser.Permission,
+		CreatedDate:    foundUser.CreatedDate,
+	}
+
+	return c.JSON(profileModel)
+
+}
+
+// GetBySocialName get user profile by social name
+func GetBySocialName(c *fiber.Ctx) error {
+
+	socialName := c.Params("name")
+	if socialName == "" {
+		errorMessage := fmt.Sprintf("Social name is required!")
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("socialNameRequired", errorMessage))
+	}
+
+	// Create service
+	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
+	if serviceErr != nil {
+		log.Error("NewUserProfileService %s", serviceErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
+	}
+
+	foundUser, err := userProfileService.FindBySocialName(socialName)
+	if err != nil {
+		log.Error("findBySocialName %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findBySocialName", "Error happened while finding user profile!"))
+	}
+
+	if foundUser == nil {
+		log.Error("Could not find user " + socialName)
+		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
+	}
+
+	profileModel := models.MyProfileModel{
+		ObjectId:       foundUser.ObjectId,
+		FullName:       foundUser.FullName,
+		SocialName:     foundUser.SocialName,
+		Avatar:         foundUser.Avatar,
+		Banner:         foundUser.Banner,
+		TagLine:        foundUser.TagLine,
+		Birthday:       foundUser.Birthday,
+		Address:        foundUser.Address,
+		LastSeen:       foundUser.LastSeen,
+		FollowCount:    foundUser.FollowCount,
+		FollowerCount:  foundUser.FollowerCount,
+		WebUrl:         foundUser.WebUrl,
+		CompanyName:    foundUser.CompanyName,
+		FacebookId:     foundUser.FacebookId,
+		InstagramId:    foundUser.InstagramId,
+		TwitterId:      foundUser.TwitterId,
+		LinkedInId:     foundUser.LinkedInId,
+		AccessUserList: foundUser.AccessUserList,
+		Permission:     foundUser.Permission,
+		CreatedDate:    foundUser.CreatedDate,
 	}
 
 	return c.JSON(profileModel)
@@ -128,15 +195,23 @@ func ReadMyProfileHandle(c *fiber.Ctx) error {
 	profileModel := models.MyProfileModel{
 		ObjectId:       foundUser.ObjectId,
 		FullName:       foundUser.FullName,
+		SocialName:     foundUser.SocialName,
 		Avatar:         foundUser.Avatar,
 		Banner:         foundUser.Banner,
 		TagLine:        foundUser.TagLine,
 		Birthday:       foundUser.Birthday,
-		WebUrl:         foundUser.WebUrl,
 		CompanyName:    foundUser.CompanyName,
+		Country:        foundUser.Country,
+		Address:        foundUser.Address,
+		LastSeen:       foundUser.LastSeen,
+		Phone:          foundUser.Phone,
+		WebUrl:         foundUser.WebUrl,
+		FollowCount:    foundUser.FollowCount,
+		FollowerCount:  foundUser.FollowerCount,
 		FacebookId:     foundUser.FacebookId,
 		InstagramId:    foundUser.InstagramId,
 		TwitterId:      foundUser.TwitterId,
+		LinkedInId:     foundUser.LinkedInId,
 		AccessUserList: foundUser.AccessUserList,
 		Permission:     foundUser.Permission,
 	}
@@ -173,6 +248,7 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 		mappedUser := make(map[string]interface{})
 		mappedUser["userId"] = v.ObjectId
 		mappedUser["fullName"] = v.FullName
+		mappedUser["socialName"] = v.SocialName
 		mappedUser["avatar"] = v.Avatar
 		mappedUser["banner"] = v.Banner
 		mappedUser["tagLine"] = v.TagLine
@@ -195,6 +271,7 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 		log.Warn("[DispatchProfilesHandle] Can not get current user")
 		currentUser = types.UserContext{}
 	}
+	log.Info("Current USER %v", currentUser)
 
 	userInfoReq := &UserInfoInReq{
 		UserId:      currentUser.UserID,

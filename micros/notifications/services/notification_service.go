@@ -341,11 +341,10 @@ func (s NotificationServiceImpl) CreateNotificationIndex(indexes map[string]inte
 }
 
 // GetNotificationByUserId get all notifications by userId who receive the notification
-func (s NotificationServiceImpl) GetNotificationByUserId(userId *uuid.UUID, sortBy string, page int64) ([]dto.Notification, error) {
+func (s NotificationServiceImpl) GetNotificationByUserId(userId *uuid.UUID, sortBy string, page int64, limit int64) ([]dto.Notification, error) {
 	sortMap := make(map[string]int)
 	sortMap[sortBy] = -1
 	skip := numberOfItems * (page - 1)
-	limit := numberOfItems
 
 	filter := struct {
 		NotifyRecieverUserId uuid.UUID `json:"notifyRecieverUserId" bson:"notifyRecieverUserId"`
@@ -375,6 +374,28 @@ func (s NotificationServiceImpl) SeenNotification(objectId uuid.UUID, userId uui
 		},
 	}
 	err := s.UpdateNotification(filter, updateOperator)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SeenNotification update all notifications to seen
+func (s NotificationServiceImpl) SeenAllNotifications(userId uuid.UUID) error {
+	filter := struct {
+		UserId uuid.UUID `json:"notifyRecieverUserId" bson:"notifyRecieverUserId"`
+	}{
+		UserId: userId,
+	}
+
+	updateOperator := coreData.UpdateOperator{
+		Set: struct {
+			IsSeen bool `json:"isSeen" bson:"isSeen"`
+		}{
+			IsSeen: true,
+		},
+	}
+	err := s.UpdateManyNotifications(filter, updateOperator)
 	if err != nil {
 		return err
 	}

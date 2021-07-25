@@ -57,6 +57,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/", authHMACMiddleware(false), handlers.CreateNotificationHandle)
 	app.Put("/", authHMACMiddleware(false), handlers.UpdateNotificationHandle)
 	app.Put("/seen/:notificationId", append(hmacCookieHandlers, handlers.SeenNotificationHandle)...)
+	app.Put("/seenall", append(hmacCookieHandlers, handlers.SeenAllNotificationsHandle)...)
 	app.Delete("/id/:notificationId", append(hmacCookieHandlers, handlers.DeleteNotificationHandle)...)
 	app.Delete("/my", append(hmacCookieHandlers, handlers.DeleteNotificationByUserIdHandle)...)
 	app.Get("/", append(hmacCookieHandlers, handlers.GetNotificationsByUserIdHandle)...)

@@ -56,6 +56,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/my", authCookieMiddleware(false), handlers.ReadMyProfileHandle)
 	app.Get("/", append(hmacCookieHandlers, handlers.QueryUserProfileHandle)...)
 	app.Get("/id/:userId", append(hmacCookieHandlers, handlers.ReadProfileHandle)...)
+	app.Get("/social/:name", append(hmacCookieHandlers, handlers.GetBySocialName)...)
 	app.Post("/index", authHMACMiddleware(false), handlers.InitProfileIndexHandle)
 	app.Put("/last-seen", authHMACMiddleware(false), handlers.UpdateLastSeen)
 

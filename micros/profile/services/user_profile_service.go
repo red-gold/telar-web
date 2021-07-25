@@ -154,6 +154,17 @@ func (s UserProfileServiceImpl) FindByUserId(userId uuid.UUID) (*dto.UserProfile
 	return s.FindOneUserProfile(filter)
 }
 
+// FindBySocialName find user profile by social name
+func (s UserProfileServiceImpl) FindBySocialName(socialName string) (*dto.UserProfile, error) {
+
+	filter := struct {
+		SocialName string `json:"socialName" bson:"socialName"`
+	}{
+		SocialName: socialName,
+	}
+	return s.FindOneUserProfile(filter)
+}
+
 // UpdateUserProfile update user profile information
 func (s UserProfileServiceImpl) UpdateUserProfile(filter interface{}, data interface{}) error {
 
@@ -186,7 +197,7 @@ func (s UserProfileServiceImpl) UpdateLastSeenNow(userId uuid.UUID) error {
 }
 
 // UpdateUserProfileById update user profile information by user id
-func (s UserProfileServiceImpl) UpdateUserProfileById(userId uuid.UUID, data *dto.UserProfile) error {
+func (s UserProfileServiceImpl) UpdateUserProfileById(userId uuid.UUID, data interface{}) error {
 	filter := struct {
 		ObjectId uuid.UUID `json:"objectId" bson:"objectId"`
 	}{

@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/red-gold/telar-core/config"
-	tsconfig "github.com/red-gold/telar-core/config"
+	coreConfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/pkg/log"
 	utils "github.com/red-gold/telar-core/utils"
-	cf "github.com/red-gold/telar-web/micros/auth/config"
+	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/database"
 	models "github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
@@ -51,7 +50,7 @@ const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_
 // LoginGithubHandler creates a handler for logging in github
 func LoginGithubHandler(c *fiber.Ctx) error {
 
-	config := cf.AuthConfig
+	config := authConfig.AuthConfig
 	log.Info("Login to path %s", c.Path())
 
 	resource := "/"
@@ -83,8 +82,8 @@ func LoginGoogleHandler(c *fiber.Ctx) error {
 // LoginPageHandler creates a handler for logging in
 func LoginPageHandler(c *fiber.Ctx) error {
 
-	appConfig := tsconfig.AppConfig
-	authConfig := &cf.AuthConfig
+	appConfig := coreConfig.AppConfig
+	authConfig := &authConfig.AuthConfig
 	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 	loginData := &loginPageData{
 		title:         "Login - Telar Social",
@@ -103,14 +102,150 @@ func LoginPageHandler(c *fiber.Ctx) error {
 // LoginTelarHandler creates a handler for logging in telar social
 func LoginTelarHandler(c *fiber.Ctx) error {
 
-	authConfig := &cf.AuthConfig
-	coreConfig := &tsconfig.AppConfig
+	model := &models.LoginModel{
+		Username:     c.FormValue("username"),
+		Password:     c.FormValue("password"),
+		ResponseType: c.FormValue("responseType"),
+	}
+
+	if model.ResponseType == SPAResponseType {
+		return LoginTelarHandlerSPA(c, model)
+	}
+	return LoginTelarHandlerSSR(c, model)
+}
+
+// LoginTelarHandlerSPA creates a handler for logging in telar social
+func LoginTelarHandlerSPA(c *fiber.Ctx, model *models.LoginModel) error {
+
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
+
+	if model.Username == "" {
+		log.Error("Username is required!")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("usernameIsRequired", "Username is required!"))
+
+	}
+
+	if model.Password == "" {
+		log.Error("Password is required!")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordIsRequired", "Password is required!"))
+	}
+
+	foundUser, err := userAuthService.FindByUsername(model.Username)
+	if err != nil || foundUser == nil {
+		if err != nil {
+			log.Error(" User not found %s", err.Error())
+		}
+		log.Error("User not found!")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserByUserName", "User not found!"))
+
+	}
+
+	if !foundUser.EmailVerified && !foundUser.PhoneVerified {
+
+		log.Error("User is not verified!")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userNotVerified", "User is not verified!"))
+	}
+
+	log.Info(" foundUser.Password: %s  , model.Password: %s", foundUser.Password, model.Password)
+	compareErr := utils.CompareHash(foundUser.Password, []byte(model.Password))
+	if compareErr != nil {
+		log.Error("Password doesn't match %s", compareErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordNotMatch", "Password doesn't match!"))
+	}
+
+	profileChannel := readProfileAsync(foundUser.ObjectId)
+	langChannel := readLanguageSettingAsync(foundUser.ObjectId,
+		&UserInfoInReq{UserId: foundUser.ObjectId, Username: foundUser.Username, SystemRole: foundUser.Role})
+
+	profileResult, langResult := <-profileChannel, <-langChannel
+	if profileResult.Error != nil || profileResult.Profile == nil {
+		if profileResult.Error != nil {
+			log.Error(" User profile  %s", profileResult.Error.Error())
+		}
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("internal/getUserProfile", "Can not find user profile!"))
+	}
+
+	currentUserLang := "en"
+	fmt.Println("langResult.settings", langResult.settings)
+	langSettigPath := getSettingPath(foundUser.ObjectId, "lang", "current")
+	if val, ok := langResult.settings[langSettigPath]; ok && val != "" {
+		currentUserLang = val
+	} else {
+		go func() {
+			userInfoReq := &UserInfoInReq{
+				UserId:      foundUser.ObjectId,
+				Username:    foundUser.Username,
+				Avatar:      profileResult.Profile.Avatar,
+				DisplayName: profileResult.Profile.FullName,
+				SystemRole:  foundUser.Role,
+			}
+			createDefaultLangSetting(userInfoReq)
+		}()
+	}
+
+	tokenModel := &TokenModel{
+		token:            ProviderAccessToken{},
+		oauthProvider:    nil,
+		providerName:     "telar",
+		profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
+		organizationList: "Red Gold",
+		claim: UserClaim{
+			DisplayName: profileResult.Profile.FullName,
+			SocialName:  profileResult.Profile.SocialName,
+			Email:       profileResult.Profile.Email,
+			Avatar:      profileResult.Profile.Avatar,
+			Banner:      profileResult.Profile.Banner,
+			TagLine:     profileResult.Profile.TagLine,
+			UserId:      foundUser.ObjectId.String(),
+			Role:        foundUser.Role,
+			CreatedDate: foundUser.CreatedDate,
+		},
+	}
+	session, err := createToken(tokenModel)
+	if err != nil {
+		log.Error("Error creating session: %s", err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token"))
+	}
+
+	// Write session on cookie
+	writeSessionOnCookie(c, session, &authConfig.AuthConfig)
+
+	// Write user language on cookie
+	writeUserLangOnCookie(c, currentUserLang)
+
+	webURL := authConfig.AuthConfig.ExternalRedirectDomain
+
+	redirect := c.Query("r")
+	log.Info("SetCookie done, redirect to: %s", redirect)
+
+	// Redirect to original requested resource (if specified in r=)
+	if len(redirect) > 0 {
+		log.Info(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
+
+		// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
+		webURL = redirect
+
+	}
+
+	return c.JSON(fiber.Map{
+		"user":     profileResult.Profile,
+		"redirect": webURL,
+	})
+
+}
+
+// LoginTelarHandlerSSR creates a handler for logging in telar social
+func LoginTelarHandlerSSR(c *fiber.Ctx, model *models.LoginModel) error {
 
 	loginData := &loginPageData{
-		title:         "Login - " + *coreConfig.AppName,
-		orgName:       *coreConfig.OrgName,
-		orgAvatar:     *coreConfig.OrgAvatar,
-		appName:       *coreConfig.AppName,
+		title:         "Login - " + *coreConfig.AppConfig.AppName,
+		orgName:       *coreConfig.AppConfig.OrgName,
+		orgAvatar:     *coreConfig.AppConfig.OrgAvatar,
+		appName:       *coreConfig.AppConfig.AppName,
 		actionForm:    "",
 		resetPassLink: "",
 		signupLink:    "",
@@ -121,11 +256,6 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
 	if serviceErr != nil {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
-	}
-
-	model := &models.LoginModel{
-		Username: c.FormValue("username"),
-		Password: c.FormValue("password"),
 	}
 
 	if model.Username == "" {
@@ -202,10 +332,14 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 		organizationList: "Red Gold",
 		claim: UserClaim{
 			DisplayName: profileResult.Profile.FullName,
+			SocialName:  profileResult.Profile.SocialName,
 			Email:       profileResult.Profile.Email,
 			Avatar:      profileResult.Profile.Avatar,
+			Banner:      profileResult.Profile.Banner,
+			TagLine:     profileResult.Profile.TagLine,
 			UserId:      foundUser.ObjectId.String(),
 			Role:        foundUser.Role,
+			CreatedDate: foundUser.CreatedDate,
 		},
 	}
 	session, err := createToken(tokenModel)
@@ -215,12 +349,12 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 	}
 
 	// Write session on cookie
-	writeSessionOnCookie(c, session, authConfig)
+	writeSessionOnCookie(c, session, &authConfig.AuthConfig)
 
 	// Write user language on cookie
 	writeUserLangOnCookie(c, currentUserLang)
 
-	webURL := authConfig.ExternalRedirectDomain
+	webURL := authConfig.AuthConfig.ExternalRedirectDomain
 
 	redirect := c.Query("r")
 	log.Info("SetCookie done, redirect to: %s", redirect)
@@ -246,7 +380,7 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 // LoginAdminHandler creates a handler for logging in telar social
 func LoginAdminHandler(c *fiber.Ctx) error {
 
-	authConfig := &cf.AuthConfig
+	authConfig := &authConfig.AuthConfig
 	// Create the model object
 	model := new(models.LoginModel)
 	if err := c.BodyParser(model); err != nil {
@@ -311,13 +445,17 @@ func LoginAdminHandler(c *fiber.Ctx) error {
 		oauthProvider:    nil,
 		providerName:     "telar",
 		profile:          &provider.Profile{Name: foundUser.Username, ID: foundUser.ObjectId.String(), Login: foundUser.Username},
-		organizationList: *config.AppConfig.OrgName,
+		organizationList: *coreConfig.AppConfig.OrgName,
 		claim: UserClaim{
 			DisplayName: foundUserProfile.FullName,
+			SocialName:  foundUserProfile.SocialName,
 			Email:       foundUserProfile.Email,
 			Avatar:      foundUserProfile.Avatar,
+			Banner:      foundUserProfile.Banner,
+			TagLine:     foundUserProfile.TagLine,
 			UserId:      foundUser.ObjectId.String(),
 			Role:        foundUser.Role,
+			CreatedDate: foundUser.CreatedDate,
 		},
 	}
 	session, err := createToken(tokenModel)

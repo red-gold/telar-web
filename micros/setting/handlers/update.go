@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"github.com/red-gold/telar-core/pkg/log"
 	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
@@ -35,7 +36,7 @@ func UpdateUserSettingHandle(c *fiber.Ctx) error {
 	if model.Type == "" {
 		errorMessage := fmt.Sprintf("Setting type can not be empty Error")
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("settingTypeEmptyError", "Setting type can not be empty Error"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("settingTypeEmptyError", "Setting type can not be empty Error"))
 	}
 
 	currentUser, ok := c.Locals("user").(types.UserContext)
@@ -48,6 +49,23 @@ func UpdateUserSettingHandle(c *fiber.Ctx) error {
 	var userSettings []domain.UserSetting
 	for _, setting := range model.List {
 
+		// TODO: Remove temporary function
+		if setting.ObjectId == uuid.Nil && setting.Name == "send_email_app_news" {
+			go func() {
+				newUserSetting := &domain.UserSetting{
+					OwnerUserId: currentUser.UserID,
+					Name:        setting.Name,
+					Value:       setting.Value,
+					Type:        model.Type,
+					IsSystem:    false,
+				}
+
+				if err := userSettingService.SaveUserSetting(newUserSetting); err != nil {
+					errorMessage := fmt.Sprintf("Save UserSetting Error %s", err.Error())
+					log.Error(errorMessage)
+				}
+			}()
+		}
 		updatedUserSetting := domain.UserSetting{
 			ObjectId:    setting.ObjectId,
 			OwnerUserId: currentUser.UserID,
@@ -63,13 +81,13 @@ func UpdateUserSettingHandle(c *fiber.Ctx) error {
 	if !(len(userSettings) > 0) {
 		errorMessage := fmt.Sprintf("No setting added for update Error")
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("noSettingForUpdate", "Can not find setting for update!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("noSettingForUpdate", "Can not find setting for update!"))
 	}
 
 	if err := userSettingService.UpdateUserSettingsById(currentUser.UserID, userSettings); err != nil {
 		errorMessage := fmt.Sprintf("Update UserSetting Error %s", err.Error())
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadGateway).JSON(utils.Error("updateUserSetting", "Can not update user setting!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("updateUserSetting", "Can not update user setting!"))
 	}
 
 	return c.SendStatus(http.StatusOK)
