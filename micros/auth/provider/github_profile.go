@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/red-gold/telar-core/pkg/log"
 )
 
 // GitHub provider
@@ -50,9 +53,12 @@ func (gh *GitHub) GetProfile(accessToken string) (*Profile, error) {
 			return profile, unmarshalErr
 		}
 	}
-	fmt.Printf("\n[INFO]: github user unmarshal %v \n", githubProfile)
+	log.Info(" github user unmarshal %v \n", githubProfile)
 	profile.TwoFactor = githubProfile.TwoFactor
 	profile.Name = githubProfile.Name
+	if profile.Name == "" {
+		profile.Name = strings.Split(githubProfile.Email, "@")[0]
+	}
 	profile.Email = githubProfile.Email
 	profile.Avatar = githubProfile.Avatar
 	profile.CreatedAt = githubProfile.CreatedAt
