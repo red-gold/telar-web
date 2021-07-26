@@ -56,9 +56,6 @@ func (gh *GitHub) GetProfile(accessToken string) (*Profile, error) {
 	log.Info(" github user unmarshal %v \n", githubProfile)
 	profile.TwoFactor = githubProfile.TwoFactor
 	profile.Name = githubProfile.Name
-	if profile.Name == "" {
-		profile.Name = strings.Split(githubProfile.Email, "@")[0]
-	}
 	profile.Email = githubProfile.Email
 	profile.Avatar = githubProfile.Avatar
 	profile.CreatedAt = githubProfile.CreatedAt
@@ -73,6 +70,9 @@ func (gh *GitHub) GetProfile(accessToken string) (*Profile, error) {
 		profile.Email = email
 	}
 
+	if profile.Name == "" {
+		profile.Name = strings.Split(profile.Email, "@")[0]
+	}
 	return profile, err
 }
 
