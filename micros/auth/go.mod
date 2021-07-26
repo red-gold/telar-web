@@ -11,6 +11,6 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/google/uuid v1.2.0
 	github.com/red-gold/telar-core v0.1.16
-	github.com/red-gold/telar-web v0.1.66
+	github.com/red-gold/telar-web v0.1.68
 	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
 )
