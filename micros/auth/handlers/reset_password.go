@@ -8,11 +8,13 @@ import (
 	uuid "github.com/gofrs/uuid"
 	tsconfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/pkg/log"
+	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
 	cf "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/database"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
+	"github.com/red-gold/telar-web/micros/auth/models"
 	service "github.com/red-gold/telar-web/micros/auth/services"
 )
 
@@ -271,5 +273,74 @@ func ResetPasswordFormHandler(c *fiber.Ctx) error {
 		"OrgAvatar": *appConfig.OrgAvatar,
 		"Message":   fmt.Sprintf("Your password has been updated. You can login with new password."),
 	})
+
+}
+
+// ChangePasswordHandler creates a handler for logging in
+func ChangePasswordHandler(c *fiber.Ctx) error {
+
+	model := new(models.ChangePasswordModel)
+	unmarshalErr := c.BodyParser(model)
+	if unmarshalErr != nil {
+		errorMessage := fmt.Sprintf("Error while un-marshaling ChangePasswordModel: %s",
+			unmarshalErr.Error())
+		log.Error(errorMessage)
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/parseModel", "Error while parsing body"))
+
+	}
+
+	if model.NewPassword == "" {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("newPasswordIsRequired", "New password is required!"))
+	}
+
+	if model.CurrentPassword == "" {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("currentPasswordIsRequired", "Current password is required!"))
+	}
+
+	if model.NewPassword != model.ConfirmPassword {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("passwordNotMatchError", "Confirm password didn't match"))
+	}
+
+	// Create service
+	userAuthService, serviceErr := service.NewUserAuthService(database.Db)
+	if serviceErr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
+	}
+	currentUser, ok := c.Locals("user").(types.UserContext)
+	if !ok {
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getCurrentUser", "Can not get current user!"))
+	}
+
+	foundUserAuth, userAuthErr := userAuthService.FindByUserId(currentUser.UserID)
+	if userAuthErr != nil {
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("findUserAuth", userAuthErr.Error()))
+	}
+
+	compareErr := utils.CompareHash(foundUserAuth.Password, []byte(model.CurrentPassword))
+	if compareErr != nil {
+		log.Error("Current password doesn't match %s", compareErr.Error())
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("currentPasswordNotMatch", "Current password doesn't match!"))
+	}
+
+	if foundUserAuth == nil {
+		errorMessage := fmt.Sprintf("User auth not found %s", currentUser.UserID)
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userAuthNotFound", "User auth not found"))
+	}
+
+	hashPassword, hashErr := utils.Hash(model.NewPassword)
+	if hashErr != nil {
+		log.Error("Hash password %s", hashErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/hash", "Hash error!"))
+
+	}
+
+	updateErr := userAuthService.UpdatePassword(foundUserAuth.ObjectId, hashPassword)
+	if updateErr != nil {
+		log.Error("Update user password %s", updateErr.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/updateUserPassword", "Can not update password!"))
+	}
+
+	return c.SendStatus(http.StatusOK)
 
 }
