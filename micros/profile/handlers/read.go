@@ -230,6 +230,12 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/dispatchProfilesModelParser", "Error happened while parsing model!"))
 	}
 
+	if len(model.UserIds) == 0 {
+		errorMessage := "UserIds is required!"
+		log.Error(errorMessage)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("userIdsRequired", errorMessage))
+	}
+
 	// Create service
 	userProfileService, serviceErr := service.NewUserProfileService(database.Db)
 	if serviceErr != nil {

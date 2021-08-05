@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	uuid "github.com/gofrs/uuid"
+	gopass "github.com/nbutton23/zxcvbn-go"
 	coreConfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/pkg/log"
 	utils "github.com/red-gold/telar-core/utils"
@@ -51,6 +52,26 @@ func SignupTokenHandle(c *fiber.Ctx) error {
 		VerifyType:   c.FormValue("verifyType"),
 		Recaptcha:    c.FormValue("g-recaptcha-response"),
 		ResponseType: c.FormValue("responseType"),
+	}
+
+	if model.User.Fullname == "" {
+		log.Error("SignupTokenHandle: missing fullname")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("missingFullname", "Missing fullname"))
+	}
+	if model.User.Email == "" {
+		log.Error("SignupTokenHandle: missing email")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("missingEmail", "Missing email"))
+	}
+	if model.User.Password == "" {
+		log.Error("SignupTokenHandle: missing password")
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("missingPassword", "Missing password"))
+	}
+
+	passStrength := gopass.PasswordStrength(model.User.Password, nil)
+	if passStrength.Score < 3 || passStrength.Entropy < 37 {
+		log.Error("Password Strength - Score (%v)", passStrength.Score)
+		log.Error("Password Strength - Entropy (%v)", passStrength.Entropy)
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("needStrongerPassword", "Password is not strong enough!"))
 	}
 
 	// Verify Captha
