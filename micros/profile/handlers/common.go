@@ -23,12 +23,23 @@ type Action struct {
 	Payload interface{} `json:"payload"`
 }
 
+type GetActionAccessKeyResultAsync struct {
+	AccessKey string `json:"accessKey"`
+	Error     error
+}
+
 type UserInfoInReq struct {
 	UserId      uuid.UUID `json:"userId"`
 	Username    string    `json:"username"`
 	Avatar      string    `json:"avatar"`
 	DisplayName string    `json:"displayName"`
 	SystemRole  string    `json:"systemRole"`
+}
+
+type JWTCookie struct {
+	Payload   string `json:"payload"`
+	Signature string `json:"signature"`
+	Header    string `json:"header"`
 }
 
 // contains
@@ -187,4 +198,36 @@ func getUpdateModel(c *fiber.Ctx) (interface{}, error) {
 	model.LastUpdated = utils.UTCNowUnix()
 	return model, nil
 
+}
+
+// GetActionAccessKey get action access key
+func GetActionAccessKey(userInfoInReq *UserInfoInReq) (*models.ActionAccessKeyModel, error) {
+	url := "/actions/room/access-key"
+
+	resData, callErr := functionCall(http.MethodGet, []byte(""), url, getHeadersFromUserInfoReq(userInfoInReq))
+	if callErr != nil {
+
+		return nil, fmt.Errorf("Cannot send request to %s - %s", url, callErr.Error())
+	}
+
+	var parsedData models.ActionAccessKeyModel
+	json.Unmarshal(resData, &parsedData)
+	return &parsedData, nil
+}
+
+// GetActionAccessKeyAsync get action access key async (async call to get action access key) and return a channel to receive the result
+func GetActionAccessKeyAsync(userInfoInReq *UserInfoInReq) <-chan GetActionAccessKeyResultAsync {
+	r := make(chan GetActionAccessKeyResultAsync)
+	go func() {
+		defer close(r)
+
+		result, err := GetActionAccessKey(userInfoInReq)
+		if err != nil {
+			r <- GetActionAccessKeyResultAsync{Error: err}
+			return
+		}
+		r <- GetActionAccessKeyResultAsync{AccessKey: result.AccessKey}
+
+	}()
+	return r
 }

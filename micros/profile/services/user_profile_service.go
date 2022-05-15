@@ -56,22 +56,33 @@ func (s UserProfileServiceImpl) SaveUserProfile(userProfile *dto.UserProfile) er
 }
 
 // FindOneUserProfile get one user profile informaition
-func (s UserProfileServiceImpl) FindOneUserProfile(filter interface{}) (*dto.UserProfile, error) {
+func (s UserProfileServiceImpl) FindOneUserProfile(filter interface{}) (chan *dto.UserProfile, chan error) {
+	resultCh := make(chan *dto.UserProfile)
+	errorCh := make(chan error)
 
-	result := <-s.UserProfileRepo.FindOne(userProfileCollectionName, filter)
-	if result.Error() != nil {
-		if result.Error() == coreData.ErrNoDocuments {
-			return nil, nil
+	go func(filter interface{}) {
+		defer close(resultCh)
+		defer close(errorCh)
+		result := <-s.UserProfileRepo.FindOne(userProfileCollectionName, filter)
+
+		if result.Error() != nil {
+			if result.Error() == coreData.ErrNoDocuments {
+				errorCh <- nil
+				resultCh <- nil
+			} else {
+				errorCh <- result.Error()
+			}
+			return
 		}
-		return nil, result.Error()
-	}
 
-	var userProfileResult dto.UserProfile
-	errDecode := result.Decode(&userProfileResult)
-	if errDecode != nil {
-		return nil, fmt.Errorf("Error docoding on dto.UserProfile")
-	}
-	return &userProfileResult, nil
+		var userProfileResult dto.UserProfile
+		errDecode := result.Decode(&userProfileResult)
+		if errDecode != nil {
+			errorCh <- fmt.Errorf("Error docoding on dto.UserProfile")
+		}
+		resultCh <- &userProfileResult
+	}(filter)
+	return resultCh, errorCh
 }
 
 // FindUserProfileList get all user profile informaition
@@ -133,7 +144,7 @@ func (s UserProfileServiceImpl) FindProfileByUserIds(userIds []uuid.UUID) ([]dto
 }
 
 // FindByUsername find user profile by name
-func (s UserProfileServiceImpl) FindByUsername(username string) (*dto.UserProfile, error) {
+func (s UserProfileServiceImpl) FindByUsername(username string) (chan *dto.UserProfile, chan error) {
 
 	filter := struct {
 		Username string `json:"username"`
@@ -144,7 +155,7 @@ func (s UserProfileServiceImpl) FindByUsername(username string) (*dto.UserProfil
 }
 
 // FindByUserId find user profile by userId
-func (s UserProfileServiceImpl) FindByUserId(userId uuid.UUID) (*dto.UserProfile, error) {
+func (s UserProfileServiceImpl) FindByUserId(userId uuid.UUID) (chan *dto.UserProfile, chan error) {
 
 	filter := struct {
 		ObjectId uuid.UUID `json:"objectId" bson:"objectId"`
@@ -155,7 +166,7 @@ func (s UserProfileServiceImpl) FindByUserId(userId uuid.UUID) (*dto.UserProfile
 }
 
 // FindBySocialName find user profile by social name
-func (s UserProfileServiceImpl) FindBySocialName(socialName string) (*dto.UserProfile, error) {
+func (s UserProfileServiceImpl) FindBySocialName(socialName string) (chan *dto.UserProfile, chan error) {
 
 	filter := struct {
 		SocialName string `json:"socialName" bson:"socialName"`

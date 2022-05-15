@@ -35,14 +35,15 @@ func ReadDtoProfileHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
 	}
 
-	foundUser, err := userProfileService.FindByUserId(userUUID)
+	foundUserChan, errChan := userProfileService.FindByUserId(userUUID)
+	foundUser, err := <-foundUserChan, <-errChan
 	if err != nil {
 		log.Error("FindByUserId %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
 	}
 
 	if foundUser == nil {
-		log.Error("Could not find user " + userUUID.String())
+		log.Error("[ReadDtoProfileHandle] Could not find user " + userUUID.String())
 		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
 	}
 
@@ -72,14 +73,15 @@ func ReadProfileHandle(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
 	}
 
-	foundUser, err := userProfileService.FindByUserId(userUUID)
+	foundUserChan, errChan := userProfileService.FindByUserId(userUUID)
+	foundUser, err := <-foundUserChan, <-errChan
 	if err != nil {
 		log.Error("FindByUserId %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
 	}
 
 	if foundUser == nil {
-		log.Error("Could not find user " + userUUID.String())
+		log.Error("[ReadProfileHandle] Could not find user " + userUUID.String())
 		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
 	}
 
@@ -127,14 +129,15 @@ func GetBySocialName(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userProfileService", "Error happened while creating userProfileService!"))
 	}
 
-	foundUser, err := userProfileService.FindBySocialName(socialName)
+	foundUserChan, errChan := userProfileService.FindBySocialName(socialName)
+	foundUser, err := <-foundUserChan, <-errChan
 	if err != nil {
 		log.Error("findBySocialName %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findBySocialName", "Error happened while finding user profile!"))
 	}
 
 	if foundUser == nil {
-		log.Error("Could not find user " + socialName)
+		log.Error("[GetBySocialName] Could not find user " + socialName)
 		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
 	}
 
@@ -182,13 +185,19 @@ func ReadMyProfileHandle(c *fiber.Ctx) error {
 			"Can not get current user"))
 	}
 
-	foundUser, err := userProfileService.FindByUserId(currentUser.UserID)
-	if err != nil {
-		log.Error("FindByUserId %s", err.Error())
+	foundUserChan, errUserChan := userProfileService.FindByUserId(currentUser.UserID)
+
+	foundUser, errUser, actionAccessKey := <-foundUserChan, <-errUserChan, <-GetActionAccessKeyAsync(getUserInfoReq(c))
+	if errUser != nil {
+		log.Error("FindByUserId %s", errUser.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findByUserId", "Error happened while finding user profile!"))
 	}
+	if actionAccessKey.Error != nil {
+		log.Error("GetActionAccessKeyAsync %s", actionAccessKey.Error.Error())
+		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/getActionAccessKeyAsync", "Error happened while getting action access key!"))
+	}
 	if foundUser == nil {
-		log.Error("Could not find user " + currentUser.UserID.String())
+		log.Error("[ReadMyProfileHandle] Could not find user " + currentUser.UserID.String())
 		return c.Status(http.StatusNotFound).JSON(utils.Error("notFoundUser", "Error happened while finding user profile!"))
 	}
 
@@ -215,6 +224,7 @@ func ReadMyProfileHandle(c *fiber.Ctx) error {
 		AccessUserList: foundUser.AccessUserList,
 		Permission:     foundUser.Permission,
 	}
+	c.Set("action-access-key", actionAccessKey.AccessKey)
 	return c.JSON(profileModel)
 
 }
@@ -245,7 +255,7 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 
 	foundUsers, err := userProfileService.FindProfileByUserIds(model.UserIds)
 	if err != nil {
-		log.Error("FindProfileByUserIds %s", err.Error())
+		log.Error("[DispatchProfilesHandle] FindProfileByUserIds %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/findProfileByUserIds", "Error happened while finding users profile!"))
 	}
 

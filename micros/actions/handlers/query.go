@@ -20,9 +20,9 @@ func GetActionRoomHandle(c *fiber.Ctx) error {
 	actionRoomId := c.Params("actionRoomId")
 	actionRoomUUID, uuidErr := uuid.FromString(actionRoomId)
 	if uuidErr != nil {
-		errorMessage := fmt.Sprintf("ActionRoom Id is required!")
+		errorMessage := "actionRoomService/internalError"
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomIdRequired", "Action room is required!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomService/internalError", "Internal error!"))
 	}
 	// Create service
 	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
@@ -57,9 +57,9 @@ func GetAccessKeyHandle(c *fiber.Ctx) error {
 	// Create service
 	actionRoomService, serviceErr := service.NewActionRoomService(database.Db)
 	if serviceErr != nil {
-		errorMessage := fmt.Sprintf("ActionRoom Id is required!")
+		errorMessage := "actionRoomService/internalError"
 		log.Error(errorMessage)
-		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomIdRequired", "Action room is required!"))
+		return c.Status(http.StatusBadRequest).JSON(utils.Error("actionRoomService/internalError", "Internal error!"))
 	}
 
 	currentUser, ok := c.Locals("user").(types.UserContext)
