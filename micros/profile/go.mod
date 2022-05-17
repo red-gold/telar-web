@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.11.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/red-gold/telar-core v0.1.16
-	github.com/red-gold/telar-web v0.1.74
+	github.com/red-gold/telar-web v0.1.76
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
