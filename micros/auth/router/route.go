@@ -13,7 +13,16 @@ import (
 	"github.com/red-gold/telar-web/micros/auth/handlers"
 )
 
-// SetupRoutes func
+// @title Auth micro API
+// @version 1.0
+// @description This is an API to authenticate users
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email dev@telar.dev
+// @license.name MIT
+// @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
+// @host localhost:4000
+// @BasePath /
 func SetupRoutes(app *fiber.App) {
 
 	// Middleware

@@ -520,7 +520,7 @@ func initUserSetup(userId uuid.UUID, email string, avatar string, displayName st
 	}
 
 	// Send request for setting
-	settingURL := "/setting"
+	settingURL := "/setting/"
 	_, settingErr := functionCall(http.MethodPost, settingBytes, settingURL, adminHeaders)
 
 	if settingErr != nil {

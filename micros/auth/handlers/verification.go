@@ -343,7 +343,16 @@ func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
 	})
 }
 
-// CheckAdminHandler creates a handler to check whether admin user registered
+// CheckAdminHandler godoc
+// @Summary whether admin user registered
+// @Description handler to check whether admin user registered
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /admin/check [post]
 func CheckAdminHandler(c *fiber.Ctx) error {
 
 	//Create service
