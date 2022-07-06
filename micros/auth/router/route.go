@@ -7,9 +7,11 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 	"github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/middleware/authcookie"
 	"github.com/red-gold/telar-core/middleware/authhmac"
+	_ "github.com/red-gold/telar-web/micros/auth/docs"
 	"github.com/red-gold/telar-web/micros/auth/handlers"
 )
 
@@ -21,9 +23,12 @@ import (
 // @contact.email dev@telar.dev
 // @license.name MIT
 // @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
-// @host localhost:4000
+// @host social.telar.dev
 // @BasePath /
 func SetupRoutes(app *fiber.App) {
+
+	// Swagger
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Middleware
 	authHMACMiddleware := authhmac.New(authhmac.Config{

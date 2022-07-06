@@ -8,7 +8,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	coreConfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/pkg/log"
-	"github.com/red-gold/telar-core/utils"
+	utils "github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
 	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	"github.com/red-gold/telar-web/micros/auth/database"
@@ -346,12 +346,11 @@ func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
 // CheckAdminHandler godoc
 // @Summary whether admin user registered
 // @Description handler to check whether admin user registered
-// @Accept  json
 // @Produce  json
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} object{admin=bool}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
 // @Router /admin/check [post]
 func CheckAdminHandler(c *fiber.Ctx) error {
 
@@ -360,7 +359,6 @@ func CheckAdminHandler(c *fiber.Ctx) error {
 	if serviceErr != nil {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/userAuthService", serviceErr.Error()))
 	}
-
 	adminUser, checkErr := userAuthService.CheckAdmin()
 	if checkErr != nil {
 		errorMessage := fmt.Sprintf("Admin check error: %s",

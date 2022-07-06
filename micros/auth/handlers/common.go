@@ -26,6 +26,10 @@ import (
 	"github.com/red-gold/telar-web/micros/auth/provider"
 )
 
+type HTTPError struct {
+	Error utils.ErrorCodeMessage `json:"error"`
+}
+
 type UserInfoInReq struct {
 	UserId      uuid.UUID `json:"userId"`
 	Username    string    `json:"username"`
