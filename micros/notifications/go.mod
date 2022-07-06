@@ -9,5 +9,5 @@ require (
 	github.com/gofiber/template v1.6.10
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/red-gold/telar-core v0.1.16
-	github.com/red-gold/telar-web v0.1.78
+	github.com/red-gold/telar-web v0.1.80
 )

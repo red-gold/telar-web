@@ -17,7 +17,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
 	github.com/red-gold/telar-core v0.1.16
-	github.com/red-gold/telar-web v0.1.78
+	github.com/red-gold/telar-web v0.1.80
 	github.com/swaggo/swag v1.8.3
 	github.com/valyala/fasthttp v1.38.0 // indirect
 	golang.org/x/net v0.0.0-20220630215102-69896b714898 // indirect
