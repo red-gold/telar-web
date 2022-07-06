@@ -30,7 +30,16 @@ type signupVerifyPageData struct {
 	message    string
 }
 
-// VerifySignupHandle verify signup token
+// VerifySignupHandle godoc
+// @Summary verify signup token
+// @Description handler verify the signup token to register user
+// @Accept json
+// @Produce json
+// @Success 200 {object} object{admin=bool}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /admin/check [post]
 func VerifySignupHandle(c *fiber.Ctx) error {
 
 	model := &models.VerifySignupModel{
