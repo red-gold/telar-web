@@ -33,9 +33,11 @@ type signupVerifyPageData struct {
 // VerifySignupHandle godoc
 // @Summary verify signup token
 // @Description handler verify the signup token to register user
-// @Accept json
-// @Produce json
-// @Success 200 {object} object{admin=bool}
+// @Accept  mpfd
+// @Param   code  formData string true "6 digits code"     example(123749) minimum(6) maximum(6) 
+// @Param   verificaitonSecret  formData string true "JWT token"     example(eyJhbGcIUzI1.eyJpL.yRQYzs) 
+// @Param   responseType  formData string true "Type of response for SPA/SSR"     example(spa) Enums(spa,ssr)
+// @Success 200 {object} object{}
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
 // @Failure 500 {object} utils.TelarError
