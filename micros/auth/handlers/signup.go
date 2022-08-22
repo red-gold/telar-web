@@ -182,7 +182,15 @@ func SignupTokenHandle(c *fiber.Ctx) error {
 
 }
 
-// AdminSignupHandle verify signup token
+// AdminSignupHandle godoc
+// @Summary signup the admin user
+// @Description signup the admin user and return access token
+// @Produce  json
+// @Success 200 {object} object{token=string}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /admin/signup [post]
 func AdminSignupHandle(c *fiber.Ctx) error {
 	authConfig := &ac.AuthConfig
 	fullName := "admin"
