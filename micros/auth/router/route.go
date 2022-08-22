@@ -61,7 +61,6 @@ func SetupRoutes(app *fiber.App) {
 	// Login
 	login.Get("/", handlers.LoginPageHandler)
 	login.Post("/", handlers.LoginTelarHandler)
-	login.Post("/telar", handlers.LoginTelarHandler)
 	login.Get("/github", handlers.LoginGithubHandler)
 	login.Get("/google", handlers.LoginGoogleHandler)
 	app.Get("/oauth2/authorized", handlers.OAuth2Handler)

@@ -41,7 +41,7 @@ type signupVerifyPageData struct {
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
 // @Failure 500 {object} utils.TelarError
-// @Router /admin/check [post]
+// @Router /signup/verify [post]
 func VerifySignupHandle(c *fiber.Ctx) error {
 
 	model := &models.VerifySignupModel{
