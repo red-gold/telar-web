@@ -18,7 +18,11 @@ import (
 	service "github.com/red-gold/telar-web/micros/auth/services"
 )
 
-// ResetPasswordPageHandler creates a handler for logging in
+// ResetPasswordPageHandler godoc
+// @Summary return reset password page
+// @Description return reset password page
+// @Produce  html
+// @Router /password/reset/{verifyId} [get]
 func ResetPasswordPageHandler(c *fiber.Ctx) error {
 	verifyId := c.Params("verifyId")
 	appConfig := tsconfig.AppConfig
@@ -69,7 +73,11 @@ func ResetPasswordPageHandler(c *fiber.Ctx) error {
 
 }
 
-// ForgetPasswordPageHandler creates a handler for logging in
+// ForgetPasswordPageHandler godoc
+// @Summary return forget password page
+// @Description return forget password page
+// @Produce  html
+// @Router /password/forget [get]
 func ForgetPasswordPageHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
 	authConfig := cf.AuthConfig
@@ -86,7 +94,15 @@ func ForgetPasswordPageHandler(c *fiber.Ctx) error {
 
 }
 
-// ForgetPasswordFormHandler
+// ForgetPasswordFormHandler godoc
+// @Summary send forget password email
+// @Description send forget password link to the user email
+// @Produce  json
+// @Success 200 {object} object{}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /password/forget [post]
 func ForgetPasswordFormHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
 	authConfig := cf.AuthConfig
@@ -199,7 +215,15 @@ func ForgetPasswordFormHandler(c *fiber.Ctx) error {
 
 }
 
-// ResetPasswordFormHandler creates a handler for logging in
+// ResetPasswordFormHandler godoc
+// @Summary reset user password
+// @Description get a password from user and set as a new password
+// @Produce  json
+// @Success 200 {object} object{}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /password/reset/{verifyId} [post]
 func ResetPasswordFormHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
 
@@ -276,7 +300,15 @@ func ResetPasswordFormHandler(c *fiber.Ctx) error {
 
 }
 
-// ChangePasswordHandler creates a handler for logging in
+// ChangePasswordHandler godoc
+// @Summary change user password
+// @Description change user password
+// @Produce  json
+// @Success 200 {object} object{}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /password/change [post]
 func ChangePasswordHandler(c *fiber.Ctx) error {
 
 	model := new(models.ChangePasswordModel)

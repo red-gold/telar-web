@@ -19,7 +19,11 @@ import (
 	service "github.com/red-gold/telar-web/micros/auth/services"
 )
 
-// SignupPageHandler creates a handler for logging in
+// SignupPageHandler godoc
+// @Summary return signup page
+// @Description return signup page in HTML
+// @Produce  html
+// @Router /admin/signup [get]
 func SignupPageHandler(c *fiber.Ctx) error {
 
 	appConfig := coreConfig.AppConfig
@@ -38,7 +42,15 @@ func SignupPageHandler(c *fiber.Ctx) error {
 	})
 }
 
-// SignupTokenHandle create signup token
+// SignupTokenHandle godoc
+// @Summary create a signup token
+// @Description return a token to verify user signup process
+// @Produce  json
+// @Success 200 {object} object{token=string}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /signup [post]
 func SignupTokenHandle(c *fiber.Ctx) error {
 	config := coreConfig.AppConfig
 	authConfig := &ac.AuthConfig
@@ -170,7 +182,15 @@ func SignupTokenHandle(c *fiber.Ctx) error {
 
 }
 
-// AdminSignupHandle verify signup token
+// AdminSignupHandle godoc
+// @Summary signup the admin user
+// @Description signup the admin user and return access token
+// @Produce  json
+// @Success 200 {object} object{token=string}
+// @Failure 400 {object} utils.TelarError
+// @Failure 404 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /admin/signup [post]
 func AdminSignupHandle(c *fiber.Ctx) error {
 	authConfig := &ac.AuthConfig
 	fullName := "admin"
