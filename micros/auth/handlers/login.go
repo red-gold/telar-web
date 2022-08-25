@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -106,6 +107,7 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 		Username:     c.FormValue("username"),
 		Password:     c.FormValue("password"),
 		ResponseType: c.FormValue("responseType"),
+		State:        c.FormValue("state"),
 	}
 
 	if model.ResponseType == SPAResponseType {
@@ -219,6 +221,12 @@ func LoginTelarHandlerSPA(c *fiber.Ctx, model *models.LoginModel) error {
 
 	webURL := authConfig.AuthConfig.ExternalRedirectDomain
 
+	// We don't expire token because it's complicating things
+	// Also Google recommend it. https://developers.google.com/actions/identity/oauth2-implicit-flow
+	expiresIn := 0
+
+	sessionQuery := "access_token=" + session + "&state=" + model.State + "&expires_in=" + strconv.Itoa(expiresIn)
+
 	redirect := c.Query("r")
 	log.Info("SetCookie done, redirect to: %s", redirect)
 
@@ -227,13 +235,15 @@ func LoginTelarHandlerSPA(c *fiber.Ctx, model *models.LoginModel) error {
 		log.Info(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
 
 		// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
-		webURL = redirect
+		webURL = getURLSchemaHost(redirect)
+		webURL = webURL + "/auth/session?" + sessionQuery + "&r=" + redirect
 
 	}
 
 	return c.JSON(fiber.Map{
-		"user":     profileResult.Profile,
-		"redirect": webURL,
+		"user":        profileResult.Profile,
+		"accessToken": session,
+		"redirect":    webURL,
 	})
 
 }

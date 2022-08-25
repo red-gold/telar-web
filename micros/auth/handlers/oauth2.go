@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -280,10 +281,18 @@ func OAuth2Handler(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("internal/createToken", "Internal server error creating token!"))
 	}
 
+	// We don't expire token because it's complicating things
+	// Also Google recommend it. https://developers.google.com/actions/identity/oauth2-implicit-flow
+	expiresIn := 0
+
+	sessionQuery := "access_token=" + session + "&state=" + state + "&expires_in=" + strconv.Itoa(expiresIn)
+
 	writeSessionOnCookie(c, session, config)
 
 	// Write user language on cookie
 	writeUserLangOnCookie(c, currentUserLang)
+
+	webURL := config.ExternalRedirectDomain + "/auth/session?" + sessionQuery
 
 	redirect := c.Query("r")
 	log.Info("SetCookie done, redirect to: %s", redirect)
@@ -293,14 +302,14 @@ func OAuth2Handler(c *fiber.Ctx) error {
 		log.Info(`Found redirect value "r"=%s, instructing client to redirect`, redirect)
 
 		// Note: unable to redirect after setting Cookie, so landing on a redirect page instead.
+		webURL = getURLSchemaHost(redirect) + "/auth/session?" + sessionQuery
+		webURL = webURL + "&r=" + redirect
 
 		return c.Render("redirect", fiber.Map{
-			"URL": redirect,
+			"URL": webURL,
 		})
 
 	}
-
-	webURL := config.ExternalRedirectDomain
 
 	return c.Render("redirect", fiber.Map{
 		"URL": webURL,

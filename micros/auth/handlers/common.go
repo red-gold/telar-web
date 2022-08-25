@@ -123,6 +123,15 @@ const UpdateAllType = 0
 const UpdateGeneralType = 1
 const UpdateSocialInfoType = 2
 
+// getURLSchemaHost
+func getURLSchemaHost(s string) string {
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+	return u.Scheme + "://" + u.Host
+}
+
 // getHeadersFromUserInfoReq
 func getHeadersFromUserInfoReq(info *UserInfoInReq) map[string][]string {
 	userHeaders := make(map[string][]string)

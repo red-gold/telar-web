@@ -24,7 +24,7 @@ import (
 // @license.name MIT
 // @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
 // @host social.telar.dev
-// @BasePath /
+// @BasePath /auth
 func SetupRoutes(app *fiber.App) {
 
 	// Swagger

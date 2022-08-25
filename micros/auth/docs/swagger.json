@@ -14,15 +14,12 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:4000",
-    "basePath": "/",
+    "host": "social.telar.dev",
+    "basePath": "/auth",
     "paths": {
         "/admin/check": {
             "post": {
                 "description": "handler to check whether admin user registered",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],

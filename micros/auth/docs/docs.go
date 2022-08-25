@@ -27,9 +27,6 @@ const docTemplate = `{
         "/admin/check": {
             "post": {
                 "description": "handler to check whether admin user registered",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -101,8 +98,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:4000",
-	BasePath:         "/",
+	Host:             "social.telar.dev",
+	BasePath:         "/auth",
 	Schemes:          []string{},
 	Title:            "Auth micro API",
 	Description:      "This is an API to authenticate users",
