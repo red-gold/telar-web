@@ -248,8 +248,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/red-gold/telar-core v0.1.16 h1:qqhNBP5R+DpqtAsTjYU7CFfV4JVSXD3dZZASYOdrSVg=
 github.com/red-gold/telar-core v0.1.16/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
-github.com/red-gold/telar-web v0.1.80 h1:3ANDNQWDsMjZFpX75LtQHqoL6nvgqqt7v3A74qQsNPs=
-github.com/red-gold/telar-web v0.1.80/go.mod h1:1Z0G5r+MTRdMWU2ayapIkGrq+PJ9Qs4yHOHV/yTf7CA=
+github.com/red-gold/telar-web v0.2.1 h1:cjY9KMuC0c8ZXL8hl0M8I0QeYWD7uaVWwYU4D8WoI9Y=
+github.com/red-gold/telar-web v0.2.1/go.mod h1:1Z0G5r+MTRdMWU2ayapIkGrq+PJ9Qs4yHOHV/yTf7CA=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
