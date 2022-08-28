@@ -267,6 +267,7 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 		}
 	}()
 
+	fmt.Println(input.EmailBody)
 	// Send email
 	email := utils.NewEmail(*coreConfig.RefEmail, *coreConfig.RefEmailPass, *coreConfig.SmtpEmail)
 	emailReq := utils.NewEmailRequest([]string{input.EmailTo}, input.EmailSubject, input.EmailBody)
