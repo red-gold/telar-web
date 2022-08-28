@@ -12,7 +12,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/google/uuid v1.2.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
-	github.com/red-gold/telar-core v0.1.18
+	github.com/red-gold/telar-core v0.1.19
 	github.com/red-gold/telar-web v0.2.6
 	github.com/swaggo/swag v1.8.3
 	github.com/valyala/bytebufferpool v1.0.0

@@ -335,8 +335,8 @@ github.com/quasilyte/go-ruleguard v0.1.2-0.20200318202121-b00d7a75d3d8/go.mod h1
 github.com/quasilyte/regex/syntax v0.0.0-20200407221936-30656e2c4a95/go.mod h1:rlzQ04UMyJXu/aOvhd8qT+hvDrFpiwqp8MRXDY9szc0=
 github.com/red-gold/telar-core v0.1.3/go.mod h1:Lut4rGGcYL1s9OmmooDwVK3ko21vFN5f5S0wUmqR4Fk=
 github.com/red-gold/telar-core v0.1.17/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
-github.com/red-gold/telar-core v0.1.18 h1:vS+U4OUpjUM4E+Nd09XZFJ6L767pRo+05b/iaupoTto=
-github.com/red-gold/telar-core v0.1.18/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
+github.com/red-gold/telar-core v0.1.19 h1:+byZK/Cp36vo+M0AdGq56EejvUEU/VwRzs0ViCyhLX8=
+github.com/red-gold/telar-core v0.1.19/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
 github.com/red-gold/telar-web v0.1.19/go.mod h1:3bURvA+IpSrfJ6PWAnxqZDjEt6UI8DsQDa2TfiCf/WQ=
 github.com/red-gold/telar-web v0.2.6 h1:Wp4/6omqFq8rWSk1vxa0WpPX6ELvdw2pY/ommjglUyg=
 github.com/red-gold/telar-web v0.2.6/go.mod h1:58zCC/2Ng0Nv31WNsLPdRPXTYBXfSTfyTQZPkHTrfvg=
