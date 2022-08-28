@@ -10,7 +10,7 @@ require (
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/plivo/plivo-go v7.2.0+incompatible // indirect
-	github.com/red-gold/telar-core v0.1.16
+	github.com/red-gold/telar-core v0.1.17
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect

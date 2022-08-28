@@ -105,8 +105,9 @@ github.com/plivo/plivo-go v7.2.0+incompatible h1:D6iAcdQTIFMe9xngJIEqffNa9gSIRoX
 github.com/plivo/plivo-go v7.2.0+incompatible/go.mod h1:OhnI9crdl6O+D94Lp1lvuwJoA3KUH39J6IM+j3HwCBE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/red-gold/telar-core v0.1.16 h1:qqhNBP5R+DpqtAsTjYU7CFfV4JVSXD3dZZASYOdrSVg=
 github.com/red-gold/telar-core v0.1.16/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
+github.com/red-gold/telar-core v0.1.17 h1:uxt2nv/3v0DHDe/zcoPTu54AQhXTHa0Lq64E4gcHRfU=
+github.com/red-gold/telar-core v0.1.17/go.mod h1:bmkWWp5lamNBfLvQVAFeEmUQ3dJ1SFD+6l0lUJvMbpA=
 github.com/red-gold/telar-web v0.2.1 h1:cjY9KMuC0c8ZXL8hl0M8I0QeYWD7uaVWwYU4D8WoI9Y=
 github.com/red-gold/telar-web v0.2.1/go.mod h1:1Z0G5r+MTRdMWU2ayapIkGrq+PJ9Qs4yHOHV/yTf7CA=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
