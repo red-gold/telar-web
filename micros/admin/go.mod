@@ -9,7 +9,7 @@ require (
 	github.com/gofiber/template v1.6.10
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/red-gold/telar-core v0.1.18
-	github.com/red-gold/telar-web v0.2.1
+	github.com/red-gold/telar-web v0.2.4
 	github.com/red-gold/telar-web/micros/auth v0.0.0-20210228035214-84737143b022
 	github.com/red-gold/telar-web/micros/setting v0.0.0-20210228035214-84737143b022
 )
