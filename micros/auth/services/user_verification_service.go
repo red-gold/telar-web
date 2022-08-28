@@ -10,7 +10,6 @@ import (
 	mongoRepo "github.com/red-gold/telar-core/data/mongodb"
 	"github.com/red-gold/telar-core/utils"
 	"github.com/red-gold/telar-web/constants"
-	authConfig "github.com/red-gold/telar-web/micros/auth/config"
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
 )
 
@@ -21,7 +20,8 @@ type UserVerificationServiceImpl struct {
 
 type EmailVerificationToken struct {
 	UserId          uuid.UUID
-	HtmlTmplPath    string
+	EmailBody       string
+	Code            string
 	Username        string
 	RemoteIpAddress string
 	EmailTo         string
@@ -266,34 +266,18 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 			err = r.(error)
 		}
 	}()
+
 	// Send email
-
 	email := utils.NewEmail(*coreConfig.RefEmail, *coreConfig.RefEmailPass, *coreConfig.SmtpEmail)
-	emailReq := utils.NewEmailRequest([]string{input.EmailTo}, input.EmailSubject, input.HtmlTmplPath)
-
-	code := utils.GenerateDigits(6)
-	emailResStatus, emailResErr := email.SendEmail(emailReq, input.HtmlTmplPath, struct {
-		Name      string
-		AppName   string
-		AppURL    string
-		Code      string
-		OrgName   string
-		OrgAvatar string
-	}{
-		Name:      input.FullName,
-		AppName:   *coreConfig.AppName,
-		AppURL:    authConfig.AuthConfig.WebURL,
-		Code:      code,
-		OrgName:   *coreConfig.OrgName,
-		OrgAvatar: *coreConfig.OrgAvatar,
-	})
-
+	emailReq := utils.NewEmailRequest([]string{input.EmailTo}, input.EmailSubject, input.EmailBody)
+	emailResStatus, emailResErr := email.SendEmail(emailReq)
 	if emailResErr != nil {
 		return "", fmt.Errorf("Error happened in sending email error: %s", emailResErr.Error())
 	}
 	if !emailResStatus {
 		return "", fmt.Errorf("Email response status is false! ")
 	}
+
 	fmt.Println("Email has been sent!")
 	verifyId, err := uuid.NewV4()
 	if err != nil {
@@ -302,7 +286,7 @@ func (s UserVerificationServiceImpl) CreateEmailVerficationToken(input EmailVeri
 	userVerification := &dto.UserVerification{
 		ObjectId:        verifyId,
 		UserId:          input.UserId,
-		Code:            code,
+		Code:            input.Code,
 		Target:          input.EmailTo,
 		TargetType:      constants.EmailVerifyConst,
 		Counter:         1,

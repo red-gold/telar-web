@@ -8,6 +8,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.10.0
 	github.com/gofiber/template v1.6.10
 	github.com/gofrs/uuid v4.0.0+incompatible
-	github.com/red-gold/telar-core v0.1.17
+	github.com/red-gold/telar-core v0.1.18
 	github.com/red-gold/telar-web v0.2.1
 )

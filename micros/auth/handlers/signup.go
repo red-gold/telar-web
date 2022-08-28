@@ -17,6 +17,7 @@ import (
 	models "github.com/red-gold/telar-web/micros/auth/models"
 	"github.com/red-gold/telar-web/micros/auth/provider"
 	service "github.com/red-gold/telar-web/micros/auth/services"
+	"github.com/valyala/bytebufferpool"
 )
 
 // SignupPageHandler godoc
@@ -133,9 +134,22 @@ func SignupTokenHandle(c *fiber.Ctx) error {
 	token := ""
 	var tokenErr error
 	if model.VerifyType == constants.EmailVerifyConst.String() {
+		buf := bytebufferpool.Get()
+		defer bytebufferpool.Put(buf)
+		code := utils.GenerateDigits(6)
+		emailData := fiber.Map{
+			"Name":      model.User.Fullname,
+			"AppName":   *coreConfig.AppConfig.AppName,
+			"AppURL":    authConfig.WebURL,
+			"Code":      code,
+			"OrgName":   *coreConfig.AppConfig.OrgName,
+			"OrgAvatar": *coreConfig.AppConfig.OrgAvatar,
+		}
+		c.App().Config().Views.Render(buf, "email_code_verify", emailData, c.App().Config().ViewsLayout)
 		token, tokenErr = userVerificationService.CreateEmailVerficationToken(service.EmailVerificationToken{
 			UserId:          newUserId,
-			HtmlTmplPath:    "views/email_code_verify.html",
+			EmailBody:       buf.String(),
+			Code:            code,
 			Username:        model.User.Email,
 			EmailTo:         model.User.Email,
 			EmailSubject:    "Your verification code",

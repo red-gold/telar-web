@@ -16,6 +16,7 @@ import (
 	dto "github.com/red-gold/telar-web/micros/auth/dto"
 	"github.com/red-gold/telar-web/micros/auth/models"
 	service "github.com/red-gold/telar-web/micros/auth/services"
+	"github.com/valyala/bytebufferpool"
 )
 
 // ResetPasswordPageHandler godoc
@@ -162,35 +163,31 @@ func ForgetPasswordFormHandler(c *fiber.Ctx) error {
 	}
 
 	// Send email
+	buf := bytebufferpool.Get()
+	defer bytebufferpool.Put(buf)
 	email := utils.NewEmail(*appConfig.RefEmail, *appConfig.RefEmailPass, *appConfig.SmtpEmail)
-	emailReq := utils.NewEmailRequest([]string{foundUserAuth.Username}, "Reset Password", "")
 	prettyURL := utils.GetPrettyURLf(authConfig.BaseRoute)
 
 	// Generate reset password token
 	token, err := generateResetPasswordToken(verifyId.String())
+	emailData := fiber.Map{
+		"Name":      foundUserAuth.Username,
+		"AppName":   *appConfig.AppName,
+		"AppURL":    authConfig.WebURL,
+		"Link":      fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, token),
+		"Email":     foundUserAuth.Username,
+		"OrgName":   *appConfig.OrgName,
+		"OrgAvatar": *appConfig.OrgAvatar,
+	}
+	c.App().Config().Views.Render(buf, "email_link_verify_reset_pass", emailData, c.App().Config().ViewsLayout)
+	emailReq := utils.NewEmailRequest([]string{foundUserAuth.Username}, "Reset Password", buf.String())
 	if err != nil {
 		log.Error("Generate reset password token: %s", err.Error())
 		return c.Status(http.StatusInternalServerError).JSON(utils.Error("generateToken", "Error in generating token!"))
 
 	}
 
-	emailResStatus, emailResErr := email.SendEmail(emailReq, "views/email_link_verify_reset_pass.html", struct {
-		Name      string
-		AppName   string
-		AppURL    string
-		Link      string
-		Email     string
-		OrgName   string
-		OrgAvatar string
-	}{
-		Name:      foundUserAuth.Username,
-		AppName:   *appConfig.AppName,
-		AppURL:    authConfig.WebURL,
-		Link:      fmt.Sprintf("%s%s/password/reset/%s", authConfig.AuthWebURI, prettyURL, token),
-		Email:     foundUserAuth.Username,
-		OrgName:   *appConfig.OrgName,
-		OrgAvatar: *appConfig.OrgAvatar,
-	})
+	emailResStatus, emailResErr := email.SendEmail(emailReq)
 
 	if emailResErr != nil {
 		log.Error("Error happened in sending email error: %s", emailResErr.Error())
