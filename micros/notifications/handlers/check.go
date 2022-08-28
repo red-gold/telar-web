@@ -9,12 +9,15 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
+	coreConfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/pkg/log"
 	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
+	notifyConfig "github.com/red-gold/telar-web/micros/notifications/config"
 	"github.com/red-gold/telar-web/micros/notifications/database"
 	"github.com/red-gold/telar-web/micros/notifications/dto"
 	service "github.com/red-gold/telar-web/micros/notifications/services"
+	"github.com/valyala/bytebufferpool"
 )
 
 // CheckNotifyEmailHandle handle query on notification
@@ -68,13 +71,27 @@ func CheckNotifyEmailHandle(c *fiber.Ctx) error {
 		if mappedSettings[key] == "true" {
 			log.Info("Sending notify email to %s", notification.NotifyRecieverEmail)
 
-			go func(notify dto.Notification) {
-				err := sendEmailNotification(notify)
+			go func(notify dto.Notification, c *fiber.Ctx) {
+				buf := bytebufferpool.Get()
+				defer bytebufferpool.Put(buf)
+				notify.Title = getNotificationTitleByType(notify.Type, notify.OwnerDisplayName)
+				emailData := fiber.Map{
+
+					"AppName":         *coreConfig.AppConfig.AppName,
+					"AppURL":          notifyConfig.NotificationConfig.WebURL,
+					"Title":           notify.Title,
+					"Avatar":          notify.OwnerAvatar,
+					"FullName":        notify.OwnerDisplayName,
+					"ViewLink":        combineURL(notifyConfig.NotificationConfig.WebURL, notify.URL),
+					"UnsubscribeLink": combineURL(notifyConfig.NotificationConfig.WebURL, "settings/notify"),
+				}
+				c.App().Config().Views.Render(buf, "notify_email", emailData, c.App().Config().ViewsLayout)
+				err := sendEmailNotification(notify, buf.String())
 				if err != nil {
 					log.Error("Send email notification - %s", err.Error())
 				}
 				log.Info("Notify email sent to %s", notify.NotifyRecieverEmail)
-			}(notification)
+			}(notification, c)
 		}
 
 		updateNotifyIds = append(updateNotifyIds, notification.ObjectId)

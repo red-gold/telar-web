@@ -14,7 +14,6 @@ import (
 	coreConfig "github.com/red-gold/telar-core/config"
 	"github.com/red-gold/telar-core/types"
 	"github.com/red-gold/telar-core/utils"
-	notifyConfig "github.com/red-gold/telar-web/micros/notifications/config"
 	"github.com/red-gold/telar-web/micros/notifications/dto"
 	"github.com/red-gold/telar-web/micros/notifications/models"
 )
@@ -137,40 +136,29 @@ func getUsersNotificationSettings(userIds []uuid.UUID, userInfoInReq *UserInfoIn
 	return parsedData, nil
 }
 
+// getNotificationTitle get notification title by notification type
+func getNotificationTitleByType(notificationType string, OwnerDisplayName string) string {
+	title := ""
+	switch notificationType {
+	case likeNotifyType:
+		title = fmt.Sprintf("%s liked your post.", OwnerDisplayName)
+	case commentNotifyType:
+		title = fmt.Sprintf("%s  added a comment on your post.", OwnerDisplayName)
+	case followNotifyType:
+		title = fmt.Sprintf("%s  now following you.", OwnerDisplayName)
+	}
+	return title
+}
+
 // sendEmailNotification Send email notification
-func sendEmailNotification(model dto.Notification) error {
+func sendEmailNotification(model dto.Notification, emailBody string) error {
 
 	email := utils.NewEmail(*coreConfig.AppConfig.RefEmail, *coreConfig.AppConfig.RefEmailPass, *coreConfig.AppConfig.SmtpEmail)
-	title := ""
-	switch model.Type {
-	case likeNotifyType:
-		title = fmt.Sprintf("%s liked your post.", model.OwnerDisplayName)
-	case commentNotifyType:
-		title = fmt.Sprintf("%s  added a comment on your post.", model.OwnerDisplayName)
-	case followNotifyType:
-		title = fmt.Sprintf("%s  now following you.", model.OwnerDisplayName)
-	}
 
-	subject := fmt.Sprintf("%s Notification - %s", *coreConfig.AppConfig.AppName, title)
-	emailReq := utils.NewEmailRequest([]string{model.NotifyRecieverEmail}, subject, "")
+	subject := fmt.Sprintf("%s Notification - %s", *coreConfig.AppConfig.AppName, model.Title)
 
-	emailResStatus, emailResErr := email.SendEmail(emailReq, "views/notify_email.html", struct {
-		AppName         string
-		AppURL          string
-		Title           string
-		Avatar          string
-		FullName        string
-		ViewLink        string
-		UnsubscribeLink string
-	}{
-		AppName:         *coreConfig.AppConfig.AppName,
-		AppURL:          notifyConfig.NotificationConfig.WebURL,
-		Title:           title,
-		Avatar:          model.OwnerAvatar,
-		FullName:        model.OwnerDisplayName,
-		ViewLink:        combineURL(notifyConfig.NotificationConfig.WebURL, model.URL),
-		UnsubscribeLink: combineURL(notifyConfig.NotificationConfig.WebURL, "settings/notify"),
-	})
+	emailReq := utils.NewEmailRequest([]string{model.NotifyRecieverEmail}, subject, emailBody)
+	emailResStatus, emailResErr := email.SendEmail(emailReq)
 
 	if emailResErr != nil {
 		return fmt.Errorf("Error happened in sending email error: %s", emailResErr.Error())
