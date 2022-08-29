@@ -609,7 +609,7 @@ func saveUserProfile(model *models.UserProfileModel) error {
 
 // updateUserProfile Update user profile
 func updateUserProfile(data []byte, updateType int, userInfoInReq *UserInfoInReq) error {
-	profileURL := fmt.Sprintf("/profile?updateType=%d", updateType)
+	profileURL := fmt.Sprintf("/profile/?updateType=%d", updateType)
 
 	_, err := functionCall(http.MethodPut, data, profileURL, getHeadersFromUserInfoReq(userInfoInReq))
 	if err != nil {
