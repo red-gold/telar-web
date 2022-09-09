@@ -12,4 +12,5 @@ Telar web framework including, authentication, notifications, admin, actions and
 <br>***DO NOT USE IN ANY PRODUCTION ENVIRONMENT!!!*** ⚠️
 
 ## Demo
-[Telar Social](https://social.telar.dev)
+[Galaxy Social](https://social.telar.dev)
+[Solar Social](https://solar.telar.dev)
