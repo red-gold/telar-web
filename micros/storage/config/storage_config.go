@@ -8,6 +8,7 @@ type (
 		BucketName     string
 		RedisAddress   string
 		QueryPrettyURL bool
+		ProxyBalancer  string
 		Debug          bool // Debug enables verbose logging of claims / cookies
 	}
 )

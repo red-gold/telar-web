@@ -62,8 +62,8 @@ func UploadeHandle(c *fiber.Ctx) error {
 
 	fileName := fileNameUUID.String()
 	fileNameWithExtension := fmt.Sprintf("%s%s", fileName, extension)
-
 	objectName := fmt.Sprintf("%s/%s/%s", currentUser.UserID.String(), dirName, fileNameWithExtension)
+
 	config := &firebase.Config{
 		StorageBucket: storageConfig.BucketName,
 	}
