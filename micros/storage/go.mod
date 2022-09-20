@@ -10,7 +10,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.10.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/red-gold/telar-core v0.1.19
-	github.com/red-gold/telar-web v0.2.9
+	github.com/red-gold/telar-web v0.2.13
 	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
 	google.golang.org/api v0.40.0
 )

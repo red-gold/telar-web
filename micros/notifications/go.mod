@@ -10,7 +10,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/red-gold/telar-core v0.1.19
-	github.com/red-gold/telar-web v0.2.9
+	github.com/red-gold/telar-web v0.2.13
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasthttp v1.39.0 // indirect
 )
