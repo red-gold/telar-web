@@ -14,7 +14,16 @@ import (
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
-// GetActionRoomHandle handle get a actionRoom
+// GetActionRoomHandle handles retrieving an actionRoom by its ID
+// @Summary Get an actionRoom
+// @Description Retrieves an actionRoom by its ID
+// @Tags actions
+// @Produce json
+// @Param actionRoomId path string true "ActionRoom ID"
+// @Success 200 {object} models.ActionRoomModel "ActionRoom retrieved successfully"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/room/{actionRoomId} [get]
 func GetActionRoomHandle(c *fiber.Ctx) error {
 
 	actionRoomId := c.Params("actionRoomId")
@@ -51,7 +60,15 @@ func GetActionRoomHandle(c *fiber.Ctx) error {
 
 }
 
-// GetAccessKeyHandle handle get access key
+// GetAccessKeyHandle handles retrieving the access key for the current user
+// @Summary Get access key
+// @Description Retrieves the access key for the current user
+// @Tags actions
+// @Produce json
+// @Success 200 {object} fiber.Map "Access key retrieved successfully"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/access-key [get]
 func GetAccessKeyHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -80,7 +97,17 @@ func GetAccessKeyHandle(c *fiber.Ctx) error {
 
 }
 
-// VerifyAccessKeyHandle handle verify access key
+// VerifyAccessKeyHandle handles verifying the access key for the current user
+// @Summary Verify access key
+// @Description Verifies the access key for the current user
+// @Tags actions
+// @Accept json
+// @Produce json
+// @Param ActionVerifyModel body models.ActionVerifyModel true "Action Verify Model"
+// @Success 200 {object} fiber.Map "Access key verified successfully"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/verify-access-key [post]
 func VerifyAccessKeyHandle(c *fiber.Ctx) error {
 
 	model := new(models.ActionVerifyModel)

@@ -14,7 +14,17 @@ import (
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
-// CreateActionRoomHandle handle create a new actionRoom
+// CreateActionRoomHandle handles the creation of a new actionRoom
+// @Summary Create a new actionRoom
+// @Description Handles the creation of a new actionRoom by parsing the request body and saving the actionRoom to the database
+// @Tags actions
+// @Accept json
+// @Produce json
+// @Param CreateActionRoomModel body models.CreateActionRoomModel true "Create ActionRoom Model"
+// @Success 200 {object} fiber.Map "ActionRoom created successfully"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/room [post]
 func CreateActionRoomHandle(c *fiber.Ctx) error {
 
 	// Create the model object

@@ -11,7 +11,15 @@ import (
 	models "github.com/red-gold/telar-web/micros/setting/models"
 )
 
-// SetupPageHandler creates a handler for logging in
+// SetupHandler handles the setup process
+// @Summary Setup process
+// @Description Handles the setup process for the application
+// @Tags setup
+// @Produce json
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /setup [post]
 func SetupHandler(c *fiber.Ctx) error {
 
 	currentUser, ok := c.Locals("user").(types.UserContext)
@@ -101,12 +109,25 @@ func SetupHandler(c *fiber.Ctx) error {
 
 }
 
-// SetupPageHandler creates a handler for logging in
+// SetupPageHandler renders the setup page
+// @Summary Display setup page
+// @Description Renders the setup page for the application
+// @Tags setup
+// @Produce html
+// @Success 200 {string} string "OK"
+// @Router /setup/page [get]
 func SetupPageHandler(c *fiber.Ctx) error {
 	return setupPageResponse(c)
 }
 
-// setupPageResponse login page response template
+// setupPageResponse renders the setup page response template
+// @Summary Render setup page
+// @Description Renders the setup page with the provided data
+// @Tags setup
+// @Produce html
+// @Success 200 {string} string "OK"
+// @Router /setup/response [post]
+
 func setupPageResponse(c *fiber.Ctx) error {
 	prettyURL := utils.GetPrettyURLf("/admin/setup")
 
@@ -115,7 +136,13 @@ func setupPageResponse(c *fiber.Ctx) error {
 	})
 }
 
-// homePageResponse login page response template
+// homePageResponse renders the home page response template
+// @Summary Render home page
+// @Description Renders the home page with the provided data
+// @Tags home
+// @Produce html
+// @Success 200 {string} string "OK"
+// @Router /home/response [post]
 func homePageResponse(c *fiber.Ctx) error {
 	return c.Render("home", fiber.Map{})
 }

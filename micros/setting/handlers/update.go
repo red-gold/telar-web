@@ -15,7 +15,17 @@ import (
 	service "github.com/red-gold/telar-web/micros/setting/services"
 )
 
-// UpdateUserSettingHandle handle create a new userSetting
+// @Summary Update user settings
+// @Description Update user settings for the current user
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   request  body     models.UpdateSettingGroupModel  true "Update setting group model"
+// @Success 200
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings [patch]
 func UpdateUserSettingHandle(c *fiber.Ctx) error {
 
 	// Create the model object

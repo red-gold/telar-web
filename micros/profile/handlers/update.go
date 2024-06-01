@@ -15,7 +15,17 @@ import (
 	service "github.com/red-gold/telar-web/micros/profile/services"
 )
 
-// UpdateProfileHandle a function invocation
+// UpdateProfileHandle updates the user profile
+// @Summary Update user profile
+// @Description Update the profile of the current user
+// @Tags profile
+// @Accept json
+// @Produce json
+// @Param profile body models.ProfileUpdateModel true "Profile Update Model"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Invalid current user"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /profile [put]
 func UpdateProfileHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -53,7 +63,16 @@ func UpdateProfileHandle(c *fiber.Ctx) error {
 
 }
 
-// UpdateLastSeen a function invocation
+// UpdateLastSeen updates the last seen time of a user
+// @Summary Update last seen time
+// @Description Update the last seen time of a user
+// @Tags profile
+// @Accept json
+// @Produce json
+// @Param lastSeen body models.UpdateLastSeenModel true "Update Last Seen Model"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Router /profile/last-seen [put]
 func UpdateLastSeen(c *fiber.Ctx) error {
 
 	model := new(models.UpdateLastSeenModel)
@@ -85,7 +104,16 @@ func UpdateLastSeen(c *fiber.Ctx) error {
 
 }
 
-// IncreaseFollowCount a function invocation
+// IncreaseFollowCount increases the follow count of a user
+// @Summary Increase follow count
+// @Description Increase the follow count of a user by a specified amount
+// @Tags profile
+// @Produce json
+// @Param userId path string true "User ID"
+// @Param inc path int true "Increment value"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Router /follow/inc/{inc}/{userId} [put]
 func IncreaseFollowCount(c *fiber.Ctx) error {
 
 	// params from /follow/inc/:inc/:userId
@@ -130,7 +158,16 @@ func IncreaseFollowCount(c *fiber.Ctx) error {
 
 }
 
-// IncreaseFollowerCount a function invocation
+// IncreaseFollowerCount increases the follower count of a user
+// @Summary Increase follower count
+// @Description Increase the follower count of a user by a specified amount
+// @Tags profile
+// @Produce json
+// @Param userId path string true "User ID"
+// @Param inc path int true "Increment value"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Router /follower/inc/{inc}/{userId} [put]
 func IncreaseFollowerCount(c *fiber.Ctx) error {
 
 	// params from /follower/inc/:inc/:userId

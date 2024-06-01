@@ -12,7 +12,16 @@ import (
 	service "github.com/red-gold/telar-web/micros/profile/services"
 )
 
-// InitProfileIndexHandle handle create a new index
+// @Summary Create a new index
+// @Description Create a new index for user profiles
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Success 200
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/initIndex [post]
 func InitProfileIndexHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -36,7 +45,17 @@ func InitProfileIndexHandle(c *fiber.Ctx) error {
 
 }
 
-// CreateProfileHandle handle create a new profile
+// @Summary Create a new profile
+// @Description Create a new user profile
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   request  body     dto.UserProfile  true "User profile model"
+// @Success 200
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles [post]
 func CreateDtoProfileHandle(c *fiber.Ctx) error {
 
 	// Create service

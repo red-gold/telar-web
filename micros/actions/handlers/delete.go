@@ -13,7 +13,16 @@ import (
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
-// DeleteActionRoomHandle handle delete a ActionRoom
+// DeleteActionRoomHandle handles the deletion of an actionRoom
+// @Summary Delete an actionRoom
+// @Description Handles the deletion of an actionRoom by its ID
+// @Tags actions
+// @Produce json
+// @Param roomId path string true "ActionRoom ID"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/room/{roomId} [delete]
 func DeleteActionRoomHandle(c *fiber.Ctx) error {
 
 	// params from /actions/room/:roomId

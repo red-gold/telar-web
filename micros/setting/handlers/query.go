@@ -22,7 +22,17 @@ type UserSettingQueryModel struct {
 	Type   int       `query:"type"`
 }
 
-// QueryUserSettingHandle handle quey on userSetting
+// @Summary Query user settings
+// @Description Query user settings based on search, owner, and type
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   query  body     UserSettingQueryModel  true "Query parameters"
+// @Success 200 {array}   models.UserSetting
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings [get]
 func QueryUserSettingHandle(c *fiber.Ctx) error {
 
 	query := new(UserSettingQueryModel)
@@ -49,7 +59,16 @@ func QueryUserSettingHandle(c *fiber.Ctx) error {
 
 }
 
-// GetAllUserSetting handle get all userSetting
+// @Summary Get all user settings
+// @Description Get all user settings for the current user
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string][]models.GetSettingGroupItemModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings [get]
 func GetAllUserSetting(c *fiber.Ctx) error {
 
 	// Create service
@@ -88,7 +107,17 @@ func GetAllUserSetting(c *fiber.Ctx) error {
 
 }
 
-// GetAllUserSettingByType handle get all userSetting
+// @Summary Get all user settings by type
+// @Description Get all user settings by type for the current user
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   type  path     string true "Setting type"
+// @Success 200 {object} models.GetSettingGroupModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings/{type} [get]
 func GetAllUserSettingByType(c *fiber.Ctx) error {
 
 	// Create service
@@ -140,7 +169,17 @@ func GetAllUserSettingByType(c *fiber.Ctx) error {
 
 }
 
-// GetUserSettingHandle handle get userSetting
+// @Summary Get a user setting by ID
+// @Description Get a user setting by ID for the current user
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   userSettingId  path     string true "User setting ID"
+// @Success 200 {object} models.UserSettingModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings/{userSettingId} [get]
 func GetUserSettingHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -184,7 +223,17 @@ func GetUserSettingHandle(c *fiber.Ctx) error {
 
 }
 
-// GetSettingByUserIds a function invocation to setting by user ids
+// @Summary Get settings by user IDs
+// @Description Get settings by user IDs
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   request  body     models.GetSettingsModel  true "Get settings model"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /settings [post]
 func GetSettingByUserIds(c *fiber.Ctx) error {
 
 	// Parse model object

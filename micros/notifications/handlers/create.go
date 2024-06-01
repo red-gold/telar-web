@@ -20,7 +20,17 @@ type NotificationAction struct {
 	Payload interface{} `json:"payload"`
 }
 
-// CreateNotificationHandle handle create a new notification
+// CreateNotificationHandle godoc
+// @Summary Create a new notification
+// @Description Handles creating a new notification and sending it to the user
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Param CreateNotificationModel body models.CreateNotificationModel true "Create Notification Model"
+// @Success 200 {object} fiber.Map
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /create-notification [post]
 func CreateNotificationHandle(c *fiber.Ctx) error {
 
 	// Create the model object

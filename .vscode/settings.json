@@ -1,6 +1,7 @@
 {
-    "files.exclude": {
-        "build": true
-    },
-    "git.ignoreLimitWarning": true
+  "files.exclude": {
+    "build": true
+  },
+  "git.ignoreLimitWarning": true,
+  "CodeGPT.apiKey": "CodeGPT Plus Beta"
 }

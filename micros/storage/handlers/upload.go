@@ -18,7 +18,18 @@ import (
 	"github.com/red-gold/telar-core/utils"
 )
 
-// UploadeHandle a function invocation
+// @Summary Upload a file to the storage
+// @Description Upload a file to the storage and return the download URL
+// @Tags upload
+// @Accept  multipart/form-data
+// @Produce  json
+// @Param   dir     path     string     true        "Directory name"
+// @Param   file    formData file     true        "File to upload"
+// @Success 200 {object} fiber.Map{payload=string}
+// @Failure 400 {object} utils.Error
+// @Failure 401 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Router /storage/{dir} [post]
 func UploadeHandle(c *fiber.Ctx) error {
 	ctx := c.Context()
 

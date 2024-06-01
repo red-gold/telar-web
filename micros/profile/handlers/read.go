@@ -18,7 +18,17 @@ type MembersPayload struct {
 	Users map[string]interface{} `json:"users"`
 }
 
-// ReadDtoProfileHandle a function invocation
+// @Summary Read DTO profile by user ID
+// @Description Read DTO profile by user ID
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   userId  path     string  true "User ID"
+// @Success 200 {object} UserProfile
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/{userId} [get]
 func ReadDtoProfileHandle(c *fiber.Ctx) error {
 
 	userId := c.Params("userId")
@@ -51,7 +61,17 @@ func ReadDtoProfileHandle(c *fiber.Ctx) error {
 
 }
 
-// ReadProfileHandle a function invocation
+// @Summary Read profile by user ID
+// @Description Read profile by user ID
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   userId  path     string  true "User ID"
+// @Success 200 {object} MyProfileModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/{userId} [get]
 func ReadProfileHandle(c *fiber.Ctx) error {
 
 	userId := c.Params("userId")
@@ -112,7 +132,17 @@ func ReadProfileHandle(c *fiber.Ctx) error {
 
 }
 
-// GetBySocialName get user profile by social name
+// @Summary Get user profile by social name
+// @Description Get user profile by social name
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   name  path     string  true "Social name"
+// @Success 200 {object} MyProfileModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/{name} [get]
 func GetBySocialName(c *fiber.Ctx) error {
 
 	socialName := c.Params("name")
@@ -168,7 +198,16 @@ func GetBySocialName(c *fiber.Ctx) error {
 
 }
 
-// ReadMyProfileHandle a function invocation to read authed user profile
+// @Summary Read my profile
+// @Description Read my profile
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} MyProfileModel
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/me [get]
 func ReadMyProfileHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -229,7 +268,17 @@ func ReadMyProfileHandle(c *fiber.Ctx) error {
 
 }
 
-// DispatchProfilesHandle a function invocation to read authed user profile
+// @Summary Dispatch profiles
+// @Description Dispatch profiles
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   request  body     models.DispatchProfilesModel  true "Dispatch profiles model"
+// @Success 200
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/dispatch [post]
 func DispatchProfilesHandle(c *fiber.Ctx) error {
 
 	// Parse model object
@@ -303,7 +352,17 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 
 }
 
-// GetProfileByIds a function invocation to profiles by ids
+// @Summary Get profiles by IDs
+// @Description Get profiles by IDs
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   request  body     models.GetProfilesModel  true "Get profiles model"
+// @Success 200 {array} UserProfile
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles [post]
 func GetProfileByIds(c *fiber.Ctx) error {
 
 	// Parse model object

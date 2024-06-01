@@ -19,7 +19,16 @@ func init() {
 
 }
 
-// GetFileHandle a function invocation
+// @Summary Download a file from the storage
+// @Description Download a file from the storage
+// @Tags download
+// @Produce  json
+// @Param   dir     path     string     true        "Directory name"
+// @Param   name    path     string     true        "File name"
+// @Param   uid     path     string     true        "User ID"
+// @Success 302
+// @Failure 400 {object} utils.Error
+// @Router /storage/{uid}/{dir}/{name} [get]
 func GetFileHandle(c *fiber.Ctx) error {
 
 	storageConfig := &appConfig.StorageConfig

@@ -14,7 +14,17 @@ import (
 	service "github.com/red-gold/telar-web/micros/actions/services"
 )
 
-// UpdateActionRoomHandle handle create a new actionRoom
+// UpdateActionRoomHandle handles updating an existing actionRoom
+// @Summary Update an actionRoom
+// @Description Updates an existing actionRoom with new data
+// @Tags actions
+// @Accept json
+// @Produce json
+// @Param ActionRoomModel body models.ActionRoomModel true "ActionRoom Model"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/room [put]
 func UpdateActionRoomHandle(c *fiber.Ctx) error {
 
 	// Create the model object
@@ -59,7 +69,15 @@ func UpdateActionRoomHandle(c *fiber.Ctx) error {
 
 }
 
-// SetAccessKeyHandle handle create a new actionRoom
+// SetAccessKeyHandle handles setting a new access key for the current user
+// @Summary Set access key
+// @Description Sets a new access key for the current user
+// @Tags actions
+// @Produce json
+// @Success 200 {object} fiber.Map "Access key set successfully"
+// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 500 {object} utils.Error "Internal server error"
+// @Router /actions/access-key [post]
 func SetAccessKeyHandle(c *fiber.Ctx) error {
 
 	// Create service

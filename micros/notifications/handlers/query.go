@@ -20,7 +20,19 @@ type UserProfileQueryModel struct {
 	Page  int64 `query:"page"`
 }
 
-// GetNotificationsByUserIdHandle handle query on notification
+// GetNotificationsByUserIdHandle godoc
+// @Summary Get notifications by user ID
+// @Description Handles querying notifications by user ID
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Success 200 {array} domain.Notification
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /notifications [get]
 func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -55,7 +67,18 @@ func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 
 }
 
-// GetNotificationHandle handle get a notification
+// GetNotificationHandle godoc
+// @Summary Get a notification
+// @Description Handles retrieving a notification by its ID
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Param notificationId path string true "Notification ID"
+// @Success 200 {object} models.NotificationModel
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /notifications/id/{notificationId} [get]
 func GetNotificationHandle(c *fiber.Ctx) error {
 
 	// Create service

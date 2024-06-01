@@ -15,7 +15,18 @@ import (
 	service "github.com/red-gold/telar-web/micros/notifications/services"
 )
 
-// UpdateNotificationHandle handle update a notification
+// UpdateNotificationHandle godoc
+// @Summary Update a notification
+// @Description Handles updating a notification by its ID
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Param NotificationModel body models.NotificationModel true "Notification Model"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /notifications/id/{notificationId} [put]
 func UpdateNotificationHandle(c *fiber.Ctx) error {
 
 	// Create the model object
@@ -64,7 +75,19 @@ func UpdateNotificationHandle(c *fiber.Ctx) error {
 
 }
 
-// SeenNotificationHandle handle set notification seen
+// @Summary Set notification as seen
+// @Description Set notification as seen by current user
+// @Tags notifications
+// @Accept  json
+// @Produce  json
+// @Param   notificationId path     string true "Notification ID"
+// @Success 200
+// @Failure 400 {object} utils.Error "Notification Id is required!"
+// @Failure 400 {object} utils.Error "Can not parse UUID!"
+// @Failure 500 {object} utils.Error "Error happened while creating notificationService!"
+// @Failure 401 {object} utils.Error "Can not get current user"
+// @Failure 500 {object} utils.Error "Can not update notification!"
+// @Router /notifications/seen/{notificationId} [patch]
 func SeenNotificationHandle(c *fiber.Ctx) error {
 
 	// params from /notifications/seen/:notificationId
@@ -105,7 +128,16 @@ func SeenNotificationHandle(c *fiber.Ctx) error {
 
 }
 
-// SeenAllNotificationsHandle handle set all notifications seen
+// @Summary Set all notifications as seen
+// @Description Set all notifications as seen by current user
+// @Tags notifications
+// @Accept  json
+// @Produce  json
+// @Success 200
+// @Failure 500 {object} utils.Error "Error happened while creating notificationService!"
+// @Failure 401 {object} utils.Error "Can not get current user"
+// @Failure 500 {object} utils.Error "Can not update notification!"
+// @Router /notifications/seen [patch]
 func SeenAllNotificationsHandle(c *fiber.Ctx) error {
 
 	// Create service

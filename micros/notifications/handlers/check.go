@@ -20,7 +20,15 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-// CheckNotifyEmailHandle handle query on notification
+// CheckNotifyEmailHandle godoc
+// @Summary Check and send notification emails
+// @Description Checks the latest notifications and sends emails to the users if necessary
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Success 200 {string} string "OK"
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /check-notify-email [post]
 func CheckNotifyEmailHandle(c *fiber.Ctx) error {
 
 	// Create service

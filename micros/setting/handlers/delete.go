@@ -13,7 +13,16 @@ import (
 	service "github.com/red-gold/telar-web/micros/setting/services"
 )
 
-// DeleteUserSettingHandle handle delete a userSetting
+// @Summary Delete a user setting
+// @Description Delete a user setting by ID
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Param   userSettingId path     string true "User Setting ID"
+// @Success 200 {object} utils.Response
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Router /userSettings/{userSettingId} [delete]
 func DeleteUserSettingHandle(c *fiber.Ctx) error {
 
 	// params from /userSettings/:userSettingId
@@ -57,7 +66,16 @@ func DeleteUserSettingHandle(c *fiber.Ctx) error {
 
 }
 
-// DeleteUserAllSettingHandle handle delete all userSetting
+// @Summary Delete all user settings
+// @Description Delete all user settings for the current user
+// @Tags user-settings
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} utils.Response
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /userSettings [delete]
 func DeleteUserAllSettingHandle(c *fiber.Ctx) error {
 
 	// Create service

@@ -18,7 +18,17 @@ type UserProfileQueryModel struct {
 	NotInclude []uuid.UUID `query:"nin"`
 }
 
-// QueryUserProfileHandle handle queru on userProfile
+// @Summary Query user profiles
+// @Description Query user profiles by search query
+// @Tags profiles
+// @Accept  json
+// @Produce  json
+// @Param   query  body     UserProfileQueryModel  true "User profile query model"
+// @Success 200 {array} UserProfile
+// @Failure 400 {object} utils.Error
+// @Failure 500 {object} utils.Error
+// @Security BearerAuth
+// @Router /profiles/query [post]
 func QueryUserProfileHandle(c *fiber.Ctx) error {
 
 	// Create service
