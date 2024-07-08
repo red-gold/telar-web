@@ -23,12 +23,14 @@ func init() {
 // @Description Download a file from the storage
 // @Tags download
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   dir     path     string     true        "Directory name"
 // @Param   name    path     string     true        "File name"
 // @Param   uid     path     string     true        "User ID"
 // @Success 302
-// @Failure 400 {object} utils.Error
-// @Router /storage/{uid}/{dir}/{name} [get]
+// @Failure 400 {object} utils.TelarError
+// @Router /{uid}/{dir}/{name} [get]
 func GetFileHandle(c *fiber.Ctx) error {
 
 	storageConfig := &appConfig.StorageConfig

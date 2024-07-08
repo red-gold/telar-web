@@ -1,0 +1,711 @@
+basePath: /profile
+definitions:
+  constants.UserPermissionConst:
+    enum:
+    - OnlyMe
+    - Public
+    - Circles
+    - Custom
+    type: string
+    x-enum-varnames:
+    - OnlyMe
+    - Public
+    - Circles
+    - Custom
+  dto.Location:
+    properties:
+      coordinates:
+        items:
+          type: number
+        type: array
+      type:
+        type: string
+    type: object
+  dto.UserProfile:
+    properties:
+      accessUserList:
+        items:
+          type: string
+        type: array
+      address:
+        type: string
+      avatar:
+        type: string
+      banner:
+        type: string
+      birthday:
+        type: integer
+      companyName:
+        type: string
+      country:
+        type: string
+      created_date:
+        type: integer
+      email:
+        type: string
+      facebookId:
+        type: string
+      followCount:
+        type: integer
+      followerCount:
+        type: integer
+      fullName:
+        type: string
+      instagramId:
+        type: string
+      lang:
+        type: string
+      last_updated:
+        type: integer
+      lastSeen:
+        type: integer
+      linkedInId:
+        type: string
+      liveLocation:
+        $ref: '#/definitions/dto.Location'
+      objectId:
+        type: string
+      permission:
+        $ref: '#/definitions/constants.UserPermissionConst'
+      phone:
+        type: string
+      postCount:
+        type: integer
+      school:
+        type: string
+      shareCount:
+        type: integer
+      socialName:
+        type: string
+      tagLine:
+        type: string
+      twitterId:
+        type: string
+      voteCount:
+        type: integer
+      webUrl:
+        type: string
+    type: object
+  handlers.UserProfileQueryModel:
+    properties:
+      notInclude:
+        items:
+          type: string
+        type: array
+      page:
+        type: integer
+      search:
+        type: string
+    type: object
+  models.DispatchProfilesModel:
+    properties:
+      reqUserId:
+        type: string
+      userIds:
+        items:
+          type: string
+        type: array
+    type: object
+  models.GetProfilesModel:
+    properties:
+      userIds:
+        items:
+          type: string
+        type: array
+    type: object
+  models.MyProfileModel:
+    properties:
+      accessUserList:
+        items:
+          type: string
+        type: array
+      address:
+        type: string
+      avatar:
+        type: string
+      banner:
+        type: string
+      birthday:
+        type: integer
+      companyName:
+        type: string
+      country:
+        type: string
+      created_date:
+        type: integer
+      email:
+        type: string
+      facebookId:
+        type: string
+      followCount:
+        type: integer
+      followerCount:
+        type: integer
+      fullName:
+        type: string
+      instagramId:
+        type: string
+      last_updated:
+        type: integer
+      lastSeen:
+        type: integer
+      linkedInId:
+        type: string
+      objectId:
+        type: string
+      permission:
+        $ref: '#/definitions/constants.UserPermissionConst'
+      phone:
+        type: string
+      postCount:
+        type: integer
+      shareCount:
+        type: integer
+      socialName:
+        type: string
+      tagLine:
+        type: string
+      twitterId:
+        type: string
+      voteCount:
+        type: integer
+      webUrl:
+        type: string
+    type: object
+  models.ProfileUpdateModel:
+    properties:
+      accessUserList:
+        items:
+          type: string
+        type: array
+      avatar:
+        type: string
+      banner:
+        type: string
+      birthday:
+        type: integer
+      companyName:
+        type: string
+      facebookId:
+        type: string
+      fullName:
+        type: string
+      instagramId:
+        type: string
+      last_updated:
+        type: integer
+      linkedInId:
+        type: string
+      permission:
+        $ref: '#/definitions/constants.UserPermissionConst'
+      tagLine:
+        type: string
+      twitterId:
+        type: string
+      webUrl:
+        type: string
+    type: object
+  models.UpdateLastSeenModel:
+    properties:
+      userId:
+        type: string
+    type: object
+  utils.ErrorCodeMessage:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.TelarError:
+    properties:
+      error:
+        $ref: '#/definitions/utils.ErrorCodeMessage'
+    type: object
+host: social.faas.telar.dev
+info:
+  contact:
+    email: dev@telar.dev
+    name: API Support
+  description: This is an API to handle users profile
+  license:
+    name: MIT
+    url: https://github.com/red-gold/telar-web/blob/master/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: Profile micro API
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Query user profiles by search query
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User profile query model
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserProfileQueryModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserProfile'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Query user profiles
+      tags:
+      - profiles
+    put:
+      consumes:
+      - application/json
+      description: Update the profile of the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Profile Update Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProfileUpdateModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Invalid current user
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Update user profile
+      tags:
+      - profile
+  /dispatch:
+    post:
+      consumes:
+      - application/json
+      description: Dispatch profiles
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Dispatch profiles model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.DispatchProfilesModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Dispatch profiles
+      tags:
+      - profiles
+  /dto:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user profile
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User profile model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserProfile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new profile
+      tags:
+      - profiles
+  /dto/id/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Read DTO profile by user ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserProfile'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Read DTO profile by user ID
+      tags:
+      - profiles
+  /dto/ids:
+    post:
+      consumes:
+      - application/json
+      description: Get profiles by IDs
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Get profiles model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.GetProfilesModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserProfile'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get profiles by IDs
+      tags:
+      - profiles
+  /follow/inc/{inc}/{userId}:
+    put:
+      description: Increase the follow count of a user by a specified amount
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Increment value
+        in: path
+        name: inc
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Increase follow count
+      tags:
+      - profile
+  /follower/inc/{inc}/{userId}:
+    put:
+      description: Increase the follower count of a user by a specified amount
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Increment value
+        in: path
+        name: inc
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Increase follower count
+      tags:
+      - profile
+  /id/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Read profile by user ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MyProfileModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Read profile by user ID
+      tags:
+      - profiles
+  /index:
+    post:
+      consumes:
+      - application/json
+      description: Create a new index for user profiles
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new index
+      tags:
+      - profiles
+  /last-seen:
+    put:
+      consumes:
+      - application/json
+      description: Update the last seen time of a user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Update Last Seen Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateLastSeenModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Update last seen time
+      tags:
+      - profile
+  /my:
+    get:
+      consumes:
+      - application/json
+      description: Read my profile
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MyProfileModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Read my profile
+      tags:
+      - profiles
+  /social/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get user profile by social name
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Social name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MyProfileModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get user profile by social name
+      tags:
+      - profiles
+securityDefinitions:
+  JWT:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -18,11 +18,13 @@ import (
 // @Tags user-settings
 // @Accept  json
 // @Produce  json
-// @Param   userSettingId path     string true "User Setting ID"
-// @Success 200 {object} utils.Response
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Router /userSettings/{userSettingId} [delete]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   key path     string true "User Setting ID"
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /userSettings/{key} [delete]
 func DeleteUserSettingHandle(c *fiber.Ctx) error {
 
 	// params from /userSettings/:userSettingId
@@ -71,11 +73,12 @@ func DeleteUserSettingHandle(c *fiber.Ctx) error {
 // @Tags user-settings
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} utils.Response
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /userSettings [delete]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Success 200 {string} string "OK"
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [delete]
 func DeleteUserAllSettingHandle(c *fiber.Ctx) error {
 
 	// Create service

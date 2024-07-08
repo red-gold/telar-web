@@ -26,13 +26,15 @@ type UserProfileQueryModel struct {
 // @Tags Notification
 // @Accept json
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param page query int false "Page number"
 // @Param limit query int false "Items per page"
-// @Success 200 {array} domain.Notification
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /notifications [get]
+// @Success 200 {array} dto.Notification
+// @Failure 400 {object} utils.TelarError
+// @Failure 401 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [get]
 func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -73,12 +75,14 @@ func GetNotificationsByUserIdHandle(c *fiber.Ctx) error {
 // @Tags Notification
 // @Accept json
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param notificationId path string true "Notification ID"
 // @Success 200 {object} models.NotificationModel
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /notifications/id/{notificationId} [get]
+// @Failure 400 {object} utils.TelarError
+// @Failure 401 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /{notificationId} [get]
 func GetNotificationHandle(c *fiber.Ctx) error {
 
 	// Create service

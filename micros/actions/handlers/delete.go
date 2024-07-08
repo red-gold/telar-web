@@ -18,11 +18,13 @@ import (
 // @Description Handles the deletion of an actionRoom by its ID
 // @Tags actions
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param roomId path string true "ActionRoom ID"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/room/{roomId} [delete]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room/{roomId} [delete]
 func DeleteActionRoomHandle(c *fiber.Ctx) error {
 
 	// params from /actions/room/:roomId

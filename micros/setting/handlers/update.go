@@ -20,12 +20,13 @@ import (
 // @Tags user-settings
 // @Accept  json
 // @Produce  json
-// @Param   request  body     models.UpdateSettingGroupModel  true "Update setting group model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body  body     models.UpdateSettingGroupModel  true "Update setting group model"
 // @Success 200
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /userSettings [patch]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [put]
 func UpdateUserSettingHandle(c *fiber.Ctx) error {
 
 	// Create the model object

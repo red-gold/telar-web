@@ -23,12 +23,13 @@ type UserProfileQueryModel struct {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   query  body     UserProfileQueryModel  true "User profile query model"
-// @Success 200 {array} UserProfile
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/query [post]
+// @Success 200 {array} dto.UserProfile
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [get]
 func QueryUserProfileHandle(c *fiber.Ctx) error {
 
 	// Create service

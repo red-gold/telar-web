@@ -1,0 +1,43 @@
+[
+{
+	"name": "actions",
+	"apiPath": "/actions",
+	"description": "This is an API to handle web socket server actions dispatch"
+}
+,
+{
+	"name": "admin",
+	"apiPath": "/admin",
+	"description": "This is an API to handle admin operations"
+}
+,
+{
+	"name": "auth",
+	"apiPath": "/auth",
+	"description": "This is an API to authenticate users"
+}
+,
+{
+	"name": "notifications",
+	"apiPath": "/notifications",
+	"description": "This is an API to handle user notifications"
+}
+,
+{
+	"name": "profile",
+	"apiPath": "/profile",
+	"description": "This is an API to handle users profile"
+}
+,
+{
+	"name": "setting",
+	"apiPath": "/setting",
+	"description": "This is an API to handle users settings"
+}
+,
+{
+	"name": "storage",
+	"apiPath": "/storage",
+	"description": "This is an API to handle files"
+}
+]

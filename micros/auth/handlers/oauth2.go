@@ -169,6 +169,16 @@ func checkOAuthSignup(accessToken string, model *TokenModel, currentUserLang *st
 }
 
 // OAuth2Handler makes a handler for OAuth 2.0 redirects
+// @Summary OAuth 2.0 Redirect Handler
+// @Description Handles OAuth 2.0 redirects and exchanges authorization code for access token
+// @Tags Login
+// @Produce  json
+// @Param code query string true "Authorization code"
+// @Param state query string true "State parameter"
+// @Success 200 {object} object{URL=string} "User profile and access token"
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /oauth2/authorized [get]
 func OAuth2Handler(c *fiber.Ctx) error {
 
 	config := &cf.AuthConfig

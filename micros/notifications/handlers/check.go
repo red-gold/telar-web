@@ -26,9 +26,11 @@ import (
 // @Tags Notification
 // @Accept json
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Success 200 {string} string "OK"
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /check-notify-email [post]
+// @Failure 500 {object} utils.TelarError
+// @Router /check [post]
 func CheckNotifyEmailHandle(c *fiber.Ctx) error {
 
 	// Create service

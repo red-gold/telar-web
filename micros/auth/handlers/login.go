@@ -49,6 +49,12 @@ var googleOauthConfig = &oauth2.Config{
 const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 
 // LoginGithubHandler creates a handler for logging in github
+// @Summary Login with GitHub
+// @Description Redirects the user to GitHub for authentication
+// @Tags Login
+// @Produce  json
+// @Success 307 {string} string "Redirect to GitHub"
+// @Router /login/github [get]
 func LoginGithubHandler(c *fiber.Ctx) error {
 
 	config := authConfig.AuthConfig
@@ -66,6 +72,12 @@ func LoginGithubHandler(c *fiber.Ctx) error {
 }
 
 // LoginGoogleHandler makes a handler for OAuth 2.0 redirects
+// @Summary Login with Google
+// @Description Redirects the user to Google for authentication
+// @Tags Login
+// @Produce  json
+// @Success 307 {string} string "Redirect to Google"
+// @Router /login/google [get]
 func LoginGoogleHandler(c *fiber.Ctx) error {
 
 	// Create oauthState cookie
@@ -81,6 +93,12 @@ func LoginGoogleHandler(c *fiber.Ctx) error {
 }
 
 // LoginPageHandler creates a handler for logging in
+// @Summary Login page
+// @Description Renders the login page for Telar Social
+// @Tags Login
+// @Produce  html
+// @Success 200 {string} string "Login page HTML"
+// @Router /login [get]
 func LoginPageHandler(c *fiber.Ctx) error {
 
 	appConfig := coreConfig.AppConfig
@@ -101,6 +119,19 @@ func LoginPageHandler(c *fiber.Ctx) error {
 }
 
 // LoginTelarHandler creates a handler for logging in telar social
+// @Summary Login with Telar Social
+// @Description Authenticates a user with Telar Social credentials
+// @Tags Login
+// @Accept  application/x-www-form-urlencoded
+// @Produce  json
+// @Param username formData string true "Username"
+// @Param password formData string true "Password"
+// @Param responseType formData string false "Response Type"
+// @Param state formData string false "State"
+// @Success 200 {object}  object{user=models.UserProfileModel,accessToken=string,redirect=string} "User profile and access token"
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /login [post]
 func LoginTelarHandler(c *fiber.Ctx) error {
 
 	model := &models.LoginModel{
@@ -116,7 +147,6 @@ func LoginTelarHandler(c *fiber.Ctx) error {
 	return LoginTelarHandlerSSR(c, model)
 }
 
-// LoginTelarHandlerSPA creates a handler for logging in telar social
 func LoginTelarHandlerSPA(c *fiber.Ctx, model *models.LoginModel) error {
 
 	// Create service
@@ -388,6 +418,16 @@ func LoginTelarHandlerSSR(c *fiber.Ctx, model *models.LoginModel) error {
 }
 
 // LoginAdminHandler creates a handler for logging in telar social
+// @Summary Admin login
+// @Description Logs in an admin user to the telar social platform
+// @Tags admin
+// @Accept  json
+// @Produce  json
+// @Param body body models.LoginModel true "Login model"
+// @Success 200 {object} object{token=string}
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /admin/login [post]
 func LoginAdminHandler(c *fiber.Ctx) error {
 
 	authConfig := &authConfig.AuthConfig

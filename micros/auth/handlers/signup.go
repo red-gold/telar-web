@@ -23,7 +23,9 @@ import (
 // SignupPageHandler godoc
 // @Summary return signup page
 // @Description return signup page in HTML
+// @Tags Admin
 // @Produce  html
+// @Success 200 {string} string "Signup page"
 // @Router /admin/signup [get]
 func SignupPageHandler(c *fiber.Ctx) error {
 
@@ -44,13 +46,20 @@ func SignupPageHandler(c *fiber.Ctx) error {
 }
 
 // SignupTokenHandle godoc
-// @Summary create a signup token
-// @Description return a token to verify user signup process
+// @Summary Sign up token generation
+// @Description Handles the generation of a signup token for email or phone verification.
+// @Tags Signup
+// @Accept  multipart/form-data
 // @Produce  json
-// @Success 200 {object} object{token=string}
-// @Failure 400 {object} utils.TelarError
-// @Failure 404 {object} utils.TelarError
-// @Failure 500 {object} utils.TelarError
+// @Param fullName formData string true "Full name of the user"
+// @Param email formData string true "Email address of the user"
+// @Param newPassword formData string true "Password for the new user account"
+// @Param verifyType formData string true "Type of verification (email or phone)"
+// @Param g-recaptcha-response formData string true "Google reCAPTCHA response token"
+// @Param responseType formData string false "Response type indicating the desired response format (default or spa)"
+// @Success 200 {object} utils.TelarError "Returns a JSON object containing the generated token if responseType is 'spa', or renders a verification page otherwise."
+// @Failure 400 {object} utils.TelarError "Returns a JSON object describing the missing or invalid parameters."
+// @Failure 500 {object} utils.TelarError "Returns a JSON object indicating an internal server error, such as failure to create a user or verify captcha."
 // @Router /signup [post]
 func SignupTokenHandle(c *fiber.Ctx) error {
 	config := coreConfig.AppConfig
@@ -199,7 +208,10 @@ func SignupTokenHandle(c *fiber.Ctx) error {
 // AdminSignupHandle godoc
 // @Summary signup the admin user
 // @Description signup the admin user and return access token
+// @Tags Admin
 // @Produce  json
+// @Security HMAC
+// @Param X-Cloud-Signature header string true "HMAC signature"
 // @Success 200 {object} object{token=string}
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError

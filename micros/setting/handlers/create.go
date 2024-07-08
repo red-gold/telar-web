@@ -19,10 +19,12 @@ import (
 // @Tags user-setting
 // @Accept  json
 // @Produce  json
-// @Param   CreateUserSettingModel body models.CreateUserSettingModel true "CreateUserSettingModel"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body body models.CreateUserSettingModel true "CreateUserSettingModel"
 // @Success 200 {object} fiber.Map{objectId=string}
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
 // @Router /user-setting [post]
 func CreateUserSettingHandle(c *fiber.Ctx) error {
 
@@ -74,11 +76,13 @@ func CreateUserSettingHandle(c *fiber.Ctx) error {
 // @Tags setting-group
 // @Accept  json
 // @Produce  json
-// @Param   CreateMultipleSettingsModel body models.CreateMultipleSettingsModel true "CreateMultipleSettingsModel"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body body models.CreateMultipleSettingsModel true "CreateMultipleSettingsModel"
 // @Success 200
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Router /setting-group [post]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [post]
 func CreateSettingGroupHandle(c *fiber.Ctx) error {
 
 	// Create the model object

@@ -21,11 +21,13 @@ import (
 // @Tags profile
 // @Accept json
 // @Produce json
-// @Param profile body models.ProfileUpdateModel true "Profile Update Model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.ProfileUpdateModel true "Profile Update Model"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Invalid current user"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /profile [put]
+// @Failure 400 {object} utils.TelarError "Invalid current user"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router / [put]
 func UpdateProfileHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -69,10 +71,12 @@ func UpdateProfileHandle(c *fiber.Ctx) error {
 // @Tags profile
 // @Accept json
 // @Produce json
-// @Param lastSeen body models.UpdateLastSeenModel true "Update Last Seen Model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.UpdateLastSeenModel true "Update Last Seen Model"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Router /profile/last-seen [put]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Router /last-seen [put]
 func UpdateLastSeen(c *fiber.Ctx) error {
 
 	model := new(models.UpdateLastSeenModel)
@@ -109,10 +113,12 @@ func UpdateLastSeen(c *fiber.Ctx) error {
 // @Description Increase the follow count of a user by a specified amount
 // @Tags profile
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param userId path string true "User ID"
 // @Param inc path int true "Increment value"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 400 {object} utils.TelarError "Bad request"
 // @Router /follow/inc/{inc}/{userId} [put]
 func IncreaseFollowCount(c *fiber.Ctx) error {
 
@@ -163,10 +169,12 @@ func IncreaseFollowCount(c *fiber.Ctx) error {
 // @Description Increase the follower count of a user by a specified amount
 // @Tags profile
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param userId path string true "User ID"
 // @Param inc path int true "Increment value"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
+// @Failure 400 {object} utils.TelarError "Bad request"
 // @Router /follower/inc/{inc}/{userId} [put]
 func IncreaseFollowerCount(c *fiber.Ctx) error {
 

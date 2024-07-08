@@ -1,0 +1,422 @@
+basePath: /notifications
+definitions:
+  dto.Notification:
+    properties:
+      created_date:
+        type: integer
+      description:
+        type: string
+      emailNotification:
+        type: integer
+      isEmailSent:
+        type: boolean
+      isSeen:
+        type: boolean
+      notifyRecieverEmail:
+        type: string
+      notifyRecieverUserId:
+        type: string
+      objectId:
+        type: string
+      ownerAvatar:
+        type: string
+      ownerDisplayName:
+        type: string
+      ownerUserId:
+        type: string
+      targetId:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  models.CreateNotificationModel:
+    properties:
+      created_date:
+        type: integer
+      description:
+        type: string
+      emailNotification:
+        type: integer
+      isSeen:
+        type: boolean
+      notifyRecieverUserId:
+        type: string
+      objectId:
+        type: string
+      ownerAvatar:
+        type: string
+      ownerDisplayName:
+        type: string
+      ownerUserId:
+        type: string
+      targetId:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  models.NotificationModel:
+    properties:
+      created_date:
+        type: integer
+      description:
+        type: string
+      emailNotification:
+        type: integer
+      isSeen:
+        type: boolean
+      notifyRecieverUserId:
+        type: string
+      objectId:
+        type: string
+      ownerAvatar:
+        type: string
+      ownerDisplayName:
+        type: string
+      ownerUserId:
+        type: string
+      targetId:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  utils.ErrorCodeMessage:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.TelarError:
+    properties:
+      error:
+        $ref: '#/definitions/utils.ErrorCodeMessage'
+    type: object
+host: social.faas.telar.dev
+info:
+  contact:
+    email: dev@telar.dev
+    name: API Support
+  description: This is an API to handle user notifications
+  license:
+    name: MIT
+    url: https://github.com/red-gold/telar-web/blob/master/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: Notifications micro API
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Handles querying notifications by user ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.Notification'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get notifications by user ID
+      tags:
+      - Notification
+    post:
+      consumes:
+      - application/json
+      description: Handles creating a new notification and sending it to the user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Create Notification Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateNotificationModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              objectId:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new notification
+      tags:
+      - Notification
+    put:
+      consumes:
+      - application/json
+      description: Handles updating a notification by its ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Notification Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.NotificationModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Update a notification
+      tags:
+      - Notification
+  /{notificationId}:
+    get:
+      consumes:
+      - application/json
+      description: Handles retrieving a notification by its ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Notification ID
+        in: path
+        name: notificationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NotificationModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get a notification
+      tags:
+      - Notification
+  /check:
+    post:
+      consumes:
+      - application/json
+      description: Checks the latest notifications and sends emails to the users if
+        necessary
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Check and send notification emails
+      tags:
+      - Notification
+  /id/{notificationId}:
+    delete:
+      consumes:
+      - application/json
+      description: Handles deleting a notification by its ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Notification ID
+        in: path
+        name: notificationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Delete a notification
+      tags:
+      - Notification
+  /seen/{notificationId}:
+    put:
+      consumes:
+      - application/json
+      description: Set notification as seen by current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Notification ID
+        in: path
+        name: notificationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Can not parse UUID!
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "401":
+          description: Can not get current user
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Can not update notification!
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Set notification as seen
+      tags:
+      - notifications
+  /seenall:
+    put:
+      consumes:
+      - application/json
+      description: Set all notifications as seen by current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Can not get current user
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Can not update notification!
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Set all notifications as seen
+      tags:
+      - notifications
+swagger: "2.0"

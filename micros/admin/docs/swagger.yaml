@@ -1,0 +1,107 @@
+basePath: /admin
+definitions:
+  utils.ErrorCodeMessage:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.TelarError:
+    properties:
+      error:
+        $ref: '#/definitions/utils.ErrorCodeMessage'
+    type: object
+host: social.faas.telar.dev
+info:
+  contact:
+    email: dev@telar.dev
+    name: API Support
+  description: This is an API to handle admin operations
+  license:
+    name: MIT
+    url: https://github.com/red-gold/telar-web/blob/master/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: Admin micro API
+  version: "1.0"
+paths:
+  /login:
+    get:
+      description: Render the login page for Telar Social
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Display login page
+      tags:
+      - Login
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Handle admin login for Telar Social
+      parameters:
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      summary: Admin login
+      tags:
+      - Login
+  /setup:
+    get:
+      description: Renders the setup page for the application
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Display setup page
+      tags:
+      - setup
+    post:
+      description: Handles the setup process for the application
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      summary: Setup process
+      tags:
+      - setup
+swagger: "2.0"

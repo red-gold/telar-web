@@ -14,7 +14,16 @@ import (
 	"github.com/red-gold/telar-web/micros/notifications/handlers"
 )
 
-// SetupRoutes func
+// @title Notifications micro API
+// @version 1.0
+// @description This is an API to handle user notifications
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email dev@telar.dev
+// @license.name MIT
+// @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
+// @host social.faas.telar.dev
+// @BasePath /notifications
 func SetupRoutes(app *fiber.App) {
 
 	// Middleware

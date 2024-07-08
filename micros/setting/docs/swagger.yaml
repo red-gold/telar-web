@@ -1,0 +1,492 @@
+basePath: /setting
+definitions:
+  dto.UserSetting:
+    properties:
+      created_date:
+        type: integer
+      isSystem:
+        type: boolean
+      name:
+        type: string
+      objectId:
+        type: string
+      ownerUserId:
+        type: string
+      type:
+        type: string
+      value:
+        type: string
+    type: object
+  fiber.Map:
+    additionalProperties: true
+    type: object
+  handlers.UserSettingQueryModel:
+    properties:
+      owner:
+        type: string
+      page:
+        type: integer
+      search:
+        type: string
+      type:
+        type: integer
+    type: object
+  models.CreateMultipleSettingsModel:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/models.CreateSettingGroupModel'
+        type: array
+    type: object
+  models.CreateSettingGroupModel:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/models.SettingGroupItemModel'
+        type: array
+      type:
+        type: string
+    type: object
+  models.CreateUserSettingModel:
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      value:
+        type: string
+    type: object
+  models.GetSettingGroupItemModel:
+    properties:
+      isSystem:
+        type: boolean
+      name:
+        type: string
+      objectId:
+        type: string
+      value:
+        type: string
+    type: object
+  models.GetSettingGroupModel:
+    properties:
+      created_date:
+        type: integer
+      list:
+        items:
+          $ref: '#/definitions/models.GetSettingGroupItemModel'
+        type: array
+      ownerUserId:
+        type: string
+      type:
+        type: string
+    type: object
+  models.GetSettingsModel:
+    properties:
+      type:
+        type: string
+      userIds:
+        items:
+          type: string
+        type: array
+    type: object
+  models.SettingGroupItemModel:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  models.UpdateSettingGroupModel:
+    properties:
+      created_date:
+        type: integer
+      list:
+        items:
+          $ref: '#/definitions/models.GetSettingGroupItemModel'
+        type: array
+      ownerUserId:
+        type: string
+      type:
+        type: string
+    type: object
+  models.UserSettingModel:
+    properties:
+      created_date:
+        type: integer
+      isSystem:
+        type: boolean
+      name:
+        type: string
+      objectId:
+        type: string
+      ownerUserId:
+        type: string
+      type:
+        type: string
+      value:
+        type: string
+    type: object
+  utils.ErrorCodeMessage:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.TelarError:
+    properties:
+      error:
+        $ref: '#/definitions/utils.ErrorCodeMessage'
+    type: object
+host: social.faas.telar.dev
+info:
+  contact:
+    email: dev@telar.dev
+    name: API Support
+  description: This is an API to handle users settings
+  license:
+    name: MIT
+    url: https://github.com/red-gold/telar-web/blob/master/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: Setting micro API
+  version: "1.0"
+paths:
+  /:
+    delete:
+      consumes:
+      - application/json
+      description: Delete all user settings for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Delete all user settings
+      tags:
+      - user-settings
+    get:
+      consumes:
+      - application/json
+      description: Get all user settings for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.GetSettingGroupItemModel'
+              type: array
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get all user settings
+      tags:
+      - user-settings
+    post:
+      consumes:
+      - application/json
+      description: Create a new setting group
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: CreateMultipleSettingsModel
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateMultipleSettingsModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new setting group
+      tags:
+      - setting-group
+    put:
+      consumes:
+      - application/json
+      description: Update user settings for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Update setting group model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateSettingGroupModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Update user settings
+      tags:
+      - user-settings
+  /dto/ids:
+    post:
+      consumes:
+      - application/json
+      description: Get settings by user IDs
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Get settings model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.GetSettingsModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get settings by user IDs
+      tags:
+      - user-settings
+  /user-setting:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user setting
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: CreateUserSettingModel
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserSettingModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                objectId:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new user setting
+      tags:
+      - user-setting
+  /userSettings:
+    get:
+      consumes:
+      - application/json
+      description: Query user settings based on search, owner, and type
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Query parameters
+        in: body
+        name: query
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserSettingQueryModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserSetting'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Query user settings
+      tags:
+      - user-settings
+  /userSettings/{key}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user setting by ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User Setting ID
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Delete a user setting
+      tags:
+      - user-settings
+    get:
+      consumes:
+      - application/json
+      description: Get a user setting by ID for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User setting ID
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserSettingModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get a user setting by ID
+      tags:
+      - user-settings
+securityDefinitions:
+  JWT:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

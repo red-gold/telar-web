@@ -23,8 +23,11 @@ import (
 // @contact.email dev@telar.dev
 // @license.name MIT
 // @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
-// @host social.telar.dev
+// @host social.faas.telar.dev
 // @BasePath /auth
+// @securityDefinitions.apiKey HMAC
+// @in header
+// @name X-Cloud-Signature
 func SetupRoutes(app *fiber.App) {
 
 	// Swagger

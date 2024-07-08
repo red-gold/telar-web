@@ -19,11 +19,13 @@ import (
 // @Description Retrieves an actionRoom by its ID
 // @Tags actions
 // @Produce json
-// @Param actionRoomId path string true "ActionRoom ID"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param roomId path string true "ActionRoom ID"
 // @Success 200 {object} models.ActionRoomModel "ActionRoom retrieved successfully"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/room/{actionRoomId} [get]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room/{roomId} [get]
 func GetActionRoomHandle(c *fiber.Ctx) error {
 
 	actionRoomId := c.Params("actionRoomId")
@@ -65,10 +67,12 @@ func GetActionRoomHandle(c *fiber.Ctx) error {
 // @Description Retrieves the access key for the current user
 // @Tags actions
 // @Produce json
-// @Success 200 {object} fiber.Map "Access key retrieved successfully"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/access-key [get]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Success 200 {object} object{accessKey=string} "Access key retrieved successfully"
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room/access-key [get]
 func GetAccessKeyHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -103,11 +107,13 @@ func GetAccessKeyHandle(c *fiber.Ctx) error {
 // @Tags actions
 // @Accept json
 // @Produce json
-// @Param ActionVerifyModel body models.ActionVerifyModel true "Action Verify Model"
-// @Success 200 {object} fiber.Map "Access key verified successfully"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/verify-access-key [post]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.ActionVerifyModel true "Action Verify Model"
+// @Success 200 {object} object{isVerified=bool} "Access key verified successfully"
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room/verify [post]
 func VerifyAccessKeyHandle(c *fiber.Ctx) error {
 
 	model := new(models.ActionVerifyModel)

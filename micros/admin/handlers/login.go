@@ -40,10 +40,10 @@ type AdminToken struct {
 // LoginPageHandler creates a handler for logging in
 // @Summary Display login page
 // @Description Render the login page for Telar Social
-// @Tags auth
+// @Tags Login
 // @Produce html
 // @Success 200 {string} string "OK"
-// @Router /auth/login [get]
+// @Router /login [get]
 func LoginPageHandler(c *fiber.Ctx) error {
 
 	appConfig := coreConfig.AppConfig
@@ -64,15 +64,15 @@ func LoginPageHandler(c *fiber.Ctx) error {
 // LoginAdminHandler creates a handler for logging in telar social
 // @Summary Admin login
 // @Description Handle admin login for Telar Social
-// @Tags auth
+// @Tags Login
 // @Accept application/x-www-form-urlencoded
 // @Produce html
 // @Param username formData string true "Username"
 // @Param password formData string true "Password"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /auth/login/admin [post]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /login [post]
 func LoginAdminHandler(c *fiber.Ctx) error {
 
 	coreConfig := &coreConfig.AppConfig
@@ -148,14 +148,6 @@ func LoginAdminHandler(c *fiber.Ctx) error {
 
 }
 
-// checkSetupEnabled check whether setup is done already
-// @Summary Check admin setup
-// @Description Check if the admin setup is already done
-// @Tags auth
-// @Produce json
-// @Success 200 {object} AdminCheck "Admin check result"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /auth/check/admin [post]
 func checkSetupEnabled() (bool, error) {
 	url := "/auth/check/admin"
 	resData, functionCallErr := functionCall([]byte(""), url, http.MethodPost)
@@ -171,14 +163,6 @@ func checkSetupEnabled() (bool, error) {
 	return adminCheck.Admin, nil
 }
 
-// signupAdmin signup admin
-// @Summary Signup admin
-// @Description Signup a new admin for Telar Social
-// @Tags auth
-// @Produce json
-// @Success 200 {object} AdminToken "Admin token"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /auth/signup/admin [post]
 func signupAdmin() (string, error) {
 	url := "/auth/signup/admin"
 	resData, functionCallErr := functionCall([]byte(""), url, http.MethodPost)
@@ -193,16 +177,6 @@ func signupAdmin() (string, error) {
 	return adminsignup.Token, nil
 }
 
-// loginAdmin login admin
-// @Summary Admin login
-// @Description Login an admin for Telar Social
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param login body models.LoginModel true "Login model"
-// @Success 200 {object} AdminToken "Admin token"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /auth/login/admin [post]
 func loginAdmin(model *models.LoginModel) (string, error) {
 	url := "/auth/login/admin"
 	bytesOut, _ := json.Marshal(model)
@@ -218,14 +192,6 @@ func loginAdmin(model *models.LoginModel) (string, error) {
 	return adminsignup.Token, nil
 }
 
-// loginPageResponse login page response template
-// @Summary Render login page
-// @Description Render the login page with the provided data
-// @Tags auth
-// @Produce html
-// @Param data body loginPageData true "Login page data"
-// @Success 200 {string} string "OK"
-// @Router /auth/login/response [post]
 func loginPageResponse(c *fiber.Ctx, data *loginPageData) error {
 	return c.Render("login", fiber.Map{
 		"Title":         data.title,

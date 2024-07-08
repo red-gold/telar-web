@@ -33,10 +33,11 @@ type signupVerifyPageData struct {
 // VerifySignupHandle godoc
 // @Summary verify signup token
 // @Description handler verify the signup token to register user
-// @Accept  mpfd
-// @Param   code  formData string true "6 digits code"     example(123749) minimum(6) maximum(6)
-// @Param   verificaitonSecret  formData string true "JWT token"     example(eyJhbGcIUzI1.eyJpL.yRQYzs)
-// @Param   responseType  formData string true "Type of response for SPA/SSR"     example(spa) Enums(spa,ssr)
+// @Tags Signup
+// @Accept mpfd
+// @Param code formData string true "6 digits code" minLength(6) maxLength(6)
+// @Param verificaitonSecret formData string true "JWT token"
+// @Param responseType formData string true "Type of response for SPA/SSR" Enums(spa,ssr)
 // @Success 200 {object} object{}
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
@@ -57,17 +58,6 @@ func VerifySignupHandle(c *fiber.Ctx) error {
 
 }
 
-// VerifySignupSPA godoc
-// @Summary Verify signup process
-// @Description Verifies the signup process by validating the token and saving user data
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param VerifySignupModel body models.VerifySignupModel true "Verify Signup Model"
-// @Success 200 {object} models.UserProfileModel
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /verify-signup [post]
 func VerifySignupSPA(c *fiber.Ctx, model *models.VerifySignupModel) error {
 
 	// Validate token
@@ -368,7 +358,10 @@ func VerifySignupSSR(c *fiber.Ctx, model *models.VerifySignupModel) error {
 // CheckAdminHandler godoc
 // @Summary whether admin user registered
 // @Description handler to check whether admin user registered
+// @Tags Admin
 // @Produce  json
+// @Security HMAC
+// @Param X-Cloud-Signature header string true "HMAC signature"
 // @Success 200 {object} object{admin=bool}
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError

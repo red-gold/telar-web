@@ -19,11 +19,13 @@ import (
 // @Tags Notification
 // @Accept json
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param notificationId path string true "Notification ID"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /notifications/id/{notificationId} [delete]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /id/{notificationId} [delete]
 func DeleteNotificationHandle(c *fiber.Ctx) error {
 
 	// params from /notifications/id/:notificationId
@@ -73,11 +75,13 @@ func DeleteNotificationHandle(c *fiber.Ctx) error {
 // @Tags Notification
 // @Accept json
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param notificationId path string true "Notification ID"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /notifications/id/{notificationId} [delete]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /id/{notificationId} [delete]
 func DeleteNotificationByUserIdHandle(c *fiber.Ctx) error {
 
 	// Create service

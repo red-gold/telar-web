@@ -17,11 +17,12 @@ import (
 // @Tags profiles
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Success 200
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/initIndex [post]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /index [post]
 func InitProfileIndexHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -50,12 +51,13 @@ func InitProfileIndexHandle(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
-// @Param   request  body     dto.UserProfile  true "User profile model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body  body     dto.UserProfile  true "User profile model"
 // @Success 200
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles [post]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /dto [post]
 func CreateDtoProfileHandle(c *fiber.Ctx) error {
 
 	// Create service

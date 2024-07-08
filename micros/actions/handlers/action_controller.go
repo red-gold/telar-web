@@ -18,11 +18,13 @@ import (
 // @Description Handles the creation of a new actionRoom by dispatching a request to the websocket server
 // @Tags actions
 // @Produce json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param roomId path string true "ActionRoom ID"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/dispatch/{roomId} [post]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /dispatch/{roomId} [post]
 func DispatchHandle(c *fiber.Ctx) error {
 
 	actionConfig := serviceConfig.ActionConfig

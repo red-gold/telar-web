@@ -3,5 +3,5 @@
     "build": true
   },
   "git.ignoreLimitWarning": true,
-  "CodeGPT.apiKey": "CodeGPT Plus Beta"
+  "CodeGPT.apiKey": "Groq"
 }

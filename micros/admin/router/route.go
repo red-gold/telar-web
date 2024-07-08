@@ -13,7 +13,16 @@ import (
 	"github.com/red-gold/telar-web/micros/admin/handlers"
 )
 
-// SetupRoutes func
+// @title Admin micro API
+// @version 1.0
+// @description This is an API to handle admin operations
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email dev@telar.dev
+// @license.name MIT
+// @license.url https://github.com/red-gold/telar-web/blob/master/LICENSE
+// @host social.faas.telar.dev
+// @BasePath /admin
 func SetupRoutes(app *fiber.App) {
 
 	// Middleware

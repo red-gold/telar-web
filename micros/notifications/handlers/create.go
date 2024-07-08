@@ -26,11 +26,13 @@ type NotificationAction struct {
 // @Tags Notification
 // @Accept json
 // @Produce json
-// @Param CreateNotificationModel body models.CreateNotificationModel true "Create Notification Model"
-// @Success 200 {object} fiber.Map
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /create-notification [post]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.CreateNotificationModel true "Create Notification Model"
+// @Success 200 {object} object{objectId=string}
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [post]
 func CreateNotificationHandle(c *fiber.Ctx) error {
 
 	// Create the model object

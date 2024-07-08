@@ -23,12 +23,13 @@ type MembersPayload struct {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   userId  path     string  true "User ID"
-// @Success 200 {object} UserProfile
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/{userId} [get]
+// @Success 200 {object} dto.UserProfile
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /dto/id/{userId} [get]
 func ReadDtoProfileHandle(c *fiber.Ctx) error {
 
 	userId := c.Params("userId")
@@ -66,12 +67,13 @@ func ReadDtoProfileHandle(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   userId  path     string  true "User ID"
-// @Success 200 {object} MyProfileModel
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/{userId} [get]
+// @Success 200 {object} models.MyProfileModel
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /id/{userId} [get]
 func ReadProfileHandle(c *fiber.Ctx) error {
 
 	userId := c.Params("userId")
@@ -137,12 +139,13 @@ func ReadProfileHandle(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   name  path     string  true "Social name"
-// @Success 200 {object} MyProfileModel
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/{name} [get]
+// @Success 200 {object} models.MyProfileModel
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /social/{name} [get]
 func GetBySocialName(c *fiber.Ctx) error {
 
 	socialName := c.Params("name")
@@ -203,11 +206,12 @@ func GetBySocialName(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} MyProfileModel
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/me [get]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Success 200 {object} models.MyProfileModel
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /my [get]
 func ReadMyProfileHandle(c *fiber.Ctx) error {
 
 	// Create service
@@ -273,12 +277,13 @@ func ReadMyProfileHandle(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
-// @Param   request  body     models.DispatchProfilesModel  true "Dispatch profiles model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body  body     models.DispatchProfilesModel  true "Dispatch profiles model"
 // @Success 200
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles/dispatch [post]
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /dispatch [post]
 func DispatchProfilesHandle(c *fiber.Ctx) error {
 
 	// Parse model object
@@ -357,12 +362,13 @@ func DispatchProfilesHandle(c *fiber.Ctx) error {
 // @Tags profiles
 // @Accept  json
 // @Produce  json
-// @Param   request  body     models.GetProfilesModel  true "Get profiles model"
-// @Success 200 {array} UserProfile
-// @Failure 400 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Security BearerAuth
-// @Router /profiles [post]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   body  body     models.GetProfilesModel  true "Get profiles model"
+// @Success 200 {array} dto.UserProfile
+// @Failure 400 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /dto/ids [post]
 func GetProfileByIds(c *fiber.Ctx) error {
 
 	// Parse model object

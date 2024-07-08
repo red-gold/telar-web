@@ -22,7 +22,10 @@ import (
 // ResetPasswordPageHandler godoc
 // @Summary return reset password page
 // @Description return reset password page
+// @Tags Password
 // @Produce  html
+// @Param verifyId path string true "The verify id that sent to user"
+// @Success 200 {string} string "Login page HTML"
 // @Router /password/reset/{verifyId} [get]
 func ResetPasswordPageHandler(c *fiber.Ctx) error {
 	verifyId := c.Params("verifyId")
@@ -77,7 +80,9 @@ func ResetPasswordPageHandler(c *fiber.Ctx) error {
 // ForgetPasswordPageHandler godoc
 // @Summary return forget password page
 // @Description return forget password page
+// @Tags Password
 // @Produce  html
+// @Success 200 {string} string "Login page HTML"
 // @Router /password/forget [get]
 func ForgetPasswordPageHandler(c *fiber.Ctx) error {
 	appConfig := tsconfig.AppConfig
@@ -98,8 +103,9 @@ func ForgetPasswordPageHandler(c *fiber.Ctx) error {
 // ForgetPasswordFormHandler godoc
 // @Summary send forget password email
 // @Description send forget password link to the user email
-// @Produce  json
-// @Success 200 {object} object{}
+// @Tags Password
+// @Produce  html
+// @Success 200 {string} string "Login page HTML"
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
 // @Failure 500 {object} utils.TelarError
@@ -215,8 +221,10 @@ func ForgetPasswordFormHandler(c *fiber.Ctx) error {
 // ResetPasswordFormHandler godoc
 // @Summary reset user password
 // @Description get a password from user and set as a new password
+// @Tags Password
 // @Produce  json
-// @Success 200 {object} object{}
+// @Param verifyId path string true "The verify id that sent to user"
+// @Success 200 {string} string "OK"
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
 // @Failure 500 {object} utils.TelarError
@@ -300,8 +308,9 @@ func ResetPasswordFormHandler(c *fiber.Ctx) error {
 // ChangePasswordHandler godoc
 // @Summary change user password
 // @Description change user password
+// @Tags Password
 // @Produce  json
-// @Success 200 {object} object{}
+// @Success 200 {string} string "OK"
 // @Failure 400 {object} utils.TelarError
 // @Failure 404 {object} utils.TelarError
 // @Failure 500 {object} utils.TelarError

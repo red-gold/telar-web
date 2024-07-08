@@ -20,11 +20,13 @@ import (
 // @Tags actions
 // @Accept json
 // @Produce json
-// @Param ActionRoomModel body models.ActionRoomModel true "ActionRoom Model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.ActionRoomModel true "ActionRoom Model"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/room [put]
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room [put]
 func UpdateActionRoomHandle(c *fiber.Ctx) error {
 
 	// Create the model object
@@ -74,10 +76,12 @@ func UpdateActionRoomHandle(c *fiber.Ctx) error {
 // @Description Sets a new access key for the current user
 // @Tags actions
 // @Produce json
-// @Success 200 {object} fiber.Map "Access key set successfully"
-// @Failure 400 {object} utils.Error "Bad request"
-// @Failure 500 {object} utils.Error "Internal server error"
-// @Router /actions/access-key [post]
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Success 200 {object} object{accessKey=string} "Access key set successfully"
+// @Failure 400 {object} utils.TelarError "Bad request"
+// @Failure 500 {object} utils.TelarError "Internal server error"
+// @Router /room/access-key [put]
 func SetAccessKeyHandle(c *fiber.Ctx) error {
 
 	// Create service

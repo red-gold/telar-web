@@ -21,12 +21,14 @@ import (
 // @Tags Notification
 // @Accept json
 // @Produce json
-// @Param NotificationModel body models.NotificationModel true "Notification Model"
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param body body models.NotificationModel true "Notification Model"
 // @Success 200 {string} string "OK"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /notifications/id/{notificationId} [put]
+// @Failure 400 {object} utils.TelarError
+// @Failure 401 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router / [put]
 func UpdateNotificationHandle(c *fiber.Ctx) error {
 
 	// Create the model object
@@ -80,14 +82,16 @@ func UpdateNotificationHandle(c *fiber.Ctx) error {
 // @Tags notifications
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Param   notificationId path     string true "Notification ID"
 // @Success 200
-// @Failure 400 {object} utils.Error "Notification Id is required!"
-// @Failure 400 {object} utils.Error "Can not parse UUID!"
-// @Failure 500 {object} utils.Error "Error happened while creating notificationService!"
-// @Failure 401 {object} utils.Error "Can not get current user"
-// @Failure 500 {object} utils.Error "Can not update notification!"
-// @Router /notifications/seen/{notificationId} [patch]
+// @Failure 400 {object} utils.TelarError "Notification Id is required!"
+// @Failure 400 {object} utils.TelarError "Can not parse UUID!"
+// @Failure 500 {object} utils.TelarError "Error happened while creating notificationService!"
+// @Failure 401 {object} utils.TelarError "Can not get current user"
+// @Failure 500 {object} utils.TelarError "Can not update notification!"
+// @Router /seen/{notificationId} [put]
 func SeenNotificationHandle(c *fiber.Ctx) error {
 
 	// params from /notifications/seen/:notificationId
@@ -133,11 +137,13 @@ func SeenNotificationHandle(c *fiber.Ctx) error {
 // @Tags notifications
 // @Accept  json
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
 // @Success 200
-// @Failure 500 {object} utils.Error "Error happened while creating notificationService!"
-// @Failure 401 {object} utils.Error "Can not get current user"
-// @Failure 500 {object} utils.Error "Can not update notification!"
-// @Router /notifications/seen [patch]
+// @Failure 500 {object} utils.TelarError "Error happened while creating notificationService!"
+// @Failure 401 {object} utils.TelarError "Can not get current user"
+// @Failure 500 {object} utils.TelarError "Can not update notification!"
+// @Router /seenall [put]
 func SeenAllNotificationsHandle(c *fiber.Ctx) error {
 
 	// Create service

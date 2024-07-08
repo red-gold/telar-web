@@ -23,13 +23,16 @@ import (
 // @Tags upload
 // @Accept  multipart/form-data
 // @Produce  json
+// @Security JWT
+// @Param Authorization header string true "Authentication" default(Bearer <Add_token_here>)
+// @Param   uid     path     string     true        "User ID"
 // @Param   dir     path     string     true        "Directory name"
 // @Param   file    formData file     true        "File to upload"
-// @Success 200 {object} fiber.Map{payload=string}
-// @Failure 400 {object} utils.Error
-// @Failure 401 {object} utils.Error
-// @Failure 500 {object} utils.Error
-// @Router /storage/{dir} [post]
+// @Success 200 {object} object{payload=string}
+// @Failure 400 {object} utils.TelarError
+// @Failure 401 {object} utils.TelarError
+// @Failure 500 {object} utils.TelarError
+// @Router /{uid}/{dir} [post]
 func UploadeHandle(c *fiber.Ctx) error {
 	ctx := c.Context()
 

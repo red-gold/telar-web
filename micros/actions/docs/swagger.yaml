@@ -1,0 +1,353 @@
+basePath: /actions
+definitions:
+  models.ActionRoomModel:
+    properties:
+      accessKey:
+        type: string
+      created_date:
+        type: integer
+      objectId:
+        type: string
+      ownerUserId:
+        type: string
+      privateKey:
+        type: string
+      status:
+        type: integer
+    type: object
+  models.ActionVerifyModel:
+    properties:
+      accessKey:
+        type: string
+    type: object
+  models.CreateActionRoomModel:
+    properties:
+      accessKey:
+        type: string
+      created_date:
+        type: integer
+      objectId:
+        type: string
+      ownerUserId:
+        type: string
+      privateKey:
+        type: string
+      status:
+        type: integer
+    type: object
+  utils.ErrorCodeMessage:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.TelarError:
+    properties:
+      error:
+        $ref: '#/definitions/utils.ErrorCodeMessage'
+    type: object
+host: social.faas.telar.dev
+info:
+  contact:
+    email: dev@telar.dev
+    name: API Support
+  description: This is an API to handle web socket server actions dispatch
+  license:
+    name: MIT
+    url: https://github.com/red-gold/telar-web/blob/master/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: Actions micro API
+  version: "1.0"
+paths:
+  /dispatch/{roomId}:
+    post:
+      description: Handles the creation of a new actionRoom by dispatching a request
+        to the websocket server
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ActionRoom ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new actionRoom
+      tags:
+      - actions
+  /room:
+    post:
+      consumes:
+      - application/json
+      description: Handles the creation of a new actionRoom by parsing the request
+        body and saving the actionRoom to the database
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Create ActionRoom Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateActionRoomModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ActionRoom created successfully
+          schema:
+            properties:
+              objectId:
+                type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Create a new actionRoom
+      tags:
+      - actions
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing actionRoom with new data
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ActionRoom Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActionRoomModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Update an actionRoom
+      tags:
+      - actions
+  /room/{roomId}:
+    delete:
+      description: Handles the deletion of an actionRoom by its ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ActionRoom ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Delete an actionRoom
+      tags:
+      - actions
+    get:
+      description: Retrieves an actionRoom by its ID
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ActionRoom ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ActionRoom retrieved successfully
+          schema:
+            $ref: '#/definitions/models.ActionRoomModel'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get an actionRoom
+      tags:
+      - actions
+  /room/access-key:
+    get:
+      description: Retrieves the access key for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access key retrieved successfully
+          schema:
+            properties:
+              accessKey:
+                type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Get access key
+      tags:
+      - actions
+    put:
+      description: Sets a new access key for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access key set successfully
+          schema:
+            properties:
+              accessKey:
+                type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Set access key
+      tags:
+      - actions
+  /room/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the access key for the current user
+      parameters:
+      - default: Bearer <Add_token_here>
+        description: Authentication
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Action Verify Model
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ActionVerifyModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access key verified successfully
+          schema:
+            properties:
+              isVerified:
+                type: boolean
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.TelarError'
+      security:
+      - JWT: []
+      summary: Verify access key
+      tags:
+      - actions
+swagger: "2.0"
